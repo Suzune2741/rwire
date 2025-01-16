@@ -5,7 +5,7 @@ export interface Debug {
   name: string;
   /*
   * 出力されるか
-  * falseだったらrubyを出力しなくても良さそう
+  * falseだったらrubyを出力しなくても良さそう？
   *  */
   active: boolean;
   /* 関係ない */
