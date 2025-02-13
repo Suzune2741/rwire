@@ -2,3 +2,4 @@ flows.json
 build/
 *.mrb
 *.rb
+.vscode/

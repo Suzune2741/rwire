@@ -19,6 +19,4 @@ export const build = async (nodeName: string, code: string) => {
     .join("");
 };
 
-const createTaskCode = (name: string, code: string) => {
-  return `$${name} = Task.create("${code}")`;
-};
+

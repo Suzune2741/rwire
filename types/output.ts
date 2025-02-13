@@ -4,9 +4,15 @@
 export interface NodeOutput {
     /**
      * ノードのIDを取得
-     * @example "debug_32ekjnsdf"
+     * @example "32ekjnsdf"
      */
     getNodeID(): string;
+
+    /**
+     * ノード名を取得
+     * @example "debug_32ekjnsdf"
+     */
+    getTaskName(): string;
 
     /**
      * ノードが接続されている別のノードの配列を取得

@@ -1,14 +1,15 @@
+import { Debug } from "../types/nodes/debug.ts";
 import { NodeOutput } from "../types/output.ts";
 
 export class DebugNode implements NodeOutput {
   private readonly nodeID: string;
   private NODE_NAME = "debug";
 
-  constructor(nodeID: string) {
-    this.nodeID = nodeID;
+  constructor(node: Debug) {
+    this.nodeID = node.id;
   }
 
-  private getTaskName(): string {
+  getTaskName(): string {
     return `${this.NODE_NAME}_${this.nodeID}`;
   }
 
@@ -21,7 +22,7 @@ export class DebugNode implements NodeOutput {
   }
 
   getNodeInitialisationCode(): string {
-    return `$${this.nodeID}.run`;
+    return `$${this.getTaskName()}.run`;
   }
 
   getNodeCodeOutput(): string {

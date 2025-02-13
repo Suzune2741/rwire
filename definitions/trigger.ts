@@ -1,17 +1,24 @@
+import { Trigger } from "../types/nodes/trigger.ts";
 import { NodeOutput } from "../types/output.ts";
 
 export class TriggerNode implements NodeOutput {
   private readonly nodeID: string;
   private readonly nextNodes: NodeOutput[];
+  private readonly config: Trigger;
   private NODE_NAME = "trigger";
 
-  constructor(nodeID: string, nextNodes: NodeOutput[]) {
-    this.nodeID = nodeID;
+  constructor(node: Trigger, nextNodes: NodeOutput[]) {
+    this.nodeID = node.id;
     this.nextNodes = nextNodes;
+    this.config = node;
   }
 
   getNodeID(): string {
     return this.nodeID;
+  }
+
+  getTaskName(): string {
+    return `${this.NODE_NAME}_${this.nodeID}`;
   }
 
   getNextConnectedNodes(): NodeOutput[] {
@@ -27,13 +34,18 @@ export class TriggerNode implements NodeOutput {
 Task.suspend
 
 while true
-  ${this.nextNodes.map(n => `sendData(${n.getNodeID()}, 1)`).join("\n")}
-  ${this.nextNodes.map(n => n.getCallCodes()).join("\n")}
+  print ""
+  ${this.nextNodes
+    .map((n) => `sendData("${n.getNodeID()}", ${this.config.op1})`)
+    .join("\n")}
+  ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
 
-  sleep 1
+  sleep ${Number(this.config.duration)}
 
-  ${this.nextNodes.map(n => `sendData(${n.getNodeID()}, 0)`).join("\n")}
-  ${this.nextNodes.map(n => n.getCallCodes()).join("\n")}
+  ${this.nextNodes
+    .map((n) => `sendData("${n.getNodeID()}", ${this.config.op2})`)
+    .join("\n")}
+  ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
   
   Task.suspend
 end
