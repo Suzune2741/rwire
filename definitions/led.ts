@@ -3,10 +3,11 @@ import { NodeOutput } from "../types/output.ts";
 
 export class LEDNode implements NodeOutput {
   private readonly nodeID: string;
+  private readonly targetPort: string;
   private NODE_NAME = "led";
-
   constructor(node: MrubyLED) {
     this.nodeID = node.id;
+    this.targetPort = node.targetPort;
   }
 
   getNodeID(): string {
@@ -24,17 +25,19 @@ export class LEDNode implements NodeOutput {
   getNodeInitialisationCode(): string {
     return `$${this.NODE_NAME}_${this.nodeID}.run`;
   }
+  getNodeTargetPort(): string {
+    return this.targetPort;
+  }
 
   getNodeCodeOutput(): string {
     return `
 Task.suspend
-
 while true
     data = getData("${this.nodeID}")
     if data == 1
-      $led13.write(1)
+      $led${this.targetPort}.write(1)
     else
-      $led13.write(0)
+      $led${this.targetPort}.write(0)
     end
     Task.suspend
 end
@@ -46,6 +49,6 @@ end
   }
 
   getInitialisationCodes(): string[] {
-    return [`$led13 = GPIO.new(13, GPIO::OUT)`];
+    return [`$led${this.targetPort} = GPIO.new(${this.targetPort}, GPIO::OUT)`];
   }
 }
