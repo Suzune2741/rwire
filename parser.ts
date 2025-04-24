@@ -71,6 +71,12 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
   };
 
   // 入力データのルートノードを処理（全体をループ処理）
+  // console.log(inputNodes
+  //   .filter(
+  //     (node) =>
+  //       !inputNodes.some((otherNode) => otherNode.wires.includes(node.id))
+  //   ) // ルートノードの判定
+  //   .map((rootNode) => buildNode(rootNode.id)));
   return inputNodes
     .filter(
       (node) =>
@@ -130,27 +136,28 @@ const collectCode = (node: NodeOutput): codeOutput[] => {
 
 // 実行
 const result = transformToNode(input);
-const res = toNodeOutput(result[0]);
 
-const codes = collectCode(res);
+// それぞれのノードに対して、getNodeCodeOutput()を呼び出し、コードを生成
+for (let i = 0; i < result.length; i++) {
+  const res = toNodeOutput(result[i]);
+  const codes = collectCode(res);
 
-const taskCode = async (id: string, nodeName: string, code: string) => {
-  return `$${nodeName} = Task.create("${await build(id, code)}")`;
-};
+  const taskCode = async (id: string, nodeName: string, code: string) => {
+    return `$${nodeName} = Task.create("${await build(id, code)}")`;
+  };
 
-const buildTaskCodes = async (codes: codeOutput[]) => {
-  const res: string[] = [];
+  const buildTaskCodes = async (codes: codeOutput[]) => {
+    const res: string[] = [];
+    for (const code of codes) {
+      res.push(await taskCode(code.nodeID, code.nodeName, code.code));
+    }
+    return res;
+  };
 
-  for (const code of codes) {
-    res.push(await taskCode(code.nodeID, code.nodeName, code.code));
-  }
-  return res;
-};
+  const c = await buildTaskCodes(codes);
 
-const c = await buildTaskCodes(codes);
-
-const output = [
-  `
+  const output = [
+    `
 $data = {}
 def getData (id)
   a = $data[id]
@@ -159,14 +166,14 @@ end
 def sendData(id, data)
   return $data[id]= data
 end
-  `,
-  codes.map((v) => v.initialisationCodes.join("\n")).join("\n"),
-  "",
-  c.join("\n"),
-  "",
-  codes.map((v) => v.initialisationCode).join("\n"),
-  "",
-  res.getCallCodes(),
-].join("\n");
-
-console.log(output);
+    `,
+    codes.map((v) => v.initialisationCodes.join("\n")).join("\n"),
+    "",
+    c.join("\n"),
+    "",
+    codes.map((v) => v.initialisationCode).join("\n"),
+    "",
+    res.getCallCodes(),
+  ].join("\n");
+  console.log(output);
+}
