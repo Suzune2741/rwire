@@ -8,14 +8,16 @@ import { Inject } from "./types/nodes/inject.ts";
 import { MrubyLED } from "./types/nodes/mruby-led.ts";
 import { Trigger } from "./types/nodes/trigger.ts";
 import { NodeOutput } from "./types/output.ts";
+import { MrubyGPIOREAD } from "./types/nodes/gpio_read.ts";
+import { GPIOREADNode } from "./definitions/gpio_read.ts";
 
-type flow = Debug | Inject | MrubyLED | Trigger;
+type flow = Debug | Inject | MrubyLED | Trigger | MrubyGPIOREAD;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
   const parsed = JSON.parse(json) as flows;
   return parsed.filter((n) => {
-    const nodeType = ["debug", "inject", "LED", "trigger"];
+    const nodeType = ["debug", "inject", "LED", "trigger", "GPIO-Read"];
     return nodeType.includes(n.type);
   });
 };
@@ -78,8 +80,8 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
 }
 
 const toNodeOutput = (
-  node: Node
-): InjectNode | TriggerNode | LEDNode | DebugNode => {
+  node: Node 
+): InjectNode | TriggerNode | LEDNode | DebugNode | GPIOREADNode => {
   switch (node.type) {
     case "inject":
       return new InjectNode(node.data as Inject, node.wires.map(toNodeOutput));
@@ -92,6 +94,8 @@ const toNodeOutput = (
       return new LEDNode(node.data as MrubyLED);
     case "debug":
       return new DebugNode(node.data as Debug);
+    case "GPIO-Read":
+      return new GPIOREADNode(node.data as MrubyGPIOREAD,node.wires.map(toNodeOutput));
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
