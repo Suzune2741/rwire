@@ -9,6 +9,7 @@ export interface Inject {
         {
             /* payload固定かも*/
             p: string
+            v?: string | number | boolean | JSON 
         }
     ],
     /* 不明 */

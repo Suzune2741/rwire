@@ -25,7 +25,6 @@ export class GPIOREADNode implements NodeOutput {
   getNodeInitialisationCode(): string {
     return `$${this.NODE_NAME}_${this.nodeID}.run`;
   }
-  //WIP
   getNodeCodeOutput(): string {
     return `
 Task.suspend
@@ -41,7 +40,6 @@ end
   getCallCodes(): string {
     return `$${this.NODE_NAME}_${this.nodeID}.resume`;
   }
-  //WIP
   getInitialisationCodes(): string[] {
     return [`$gpio${this.targetPort_digital} = GPIO.new(${this.targetPort_digital}, GPIO::IN,GPIO::PULL_UP)
       `];
