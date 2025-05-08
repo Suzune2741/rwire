@@ -10,14 +10,18 @@ import { Trigger } from "./types/nodes/trigger.ts";
 import { NodeOutput } from "./types/output.ts";
 import { MrubyGPIOREAD } from "./types/nodes/gpio_read.ts";
 import { GPIOREADNode } from "./definitions/gpio_read.ts";
+import { MrubyPWM } from "./types/nodes/mruby-pwm.ts";
+import { PWMNode } from "./definitions/pwm.ts";
+import { Delay } from "./types/nodes/delay.ts";
+import { DelayNode } from "./definitions/delay.ts";
 
-type flow = Debug | Inject | MrubyLED | Trigger | MrubyGPIOREAD;
+type flow = Debug | Inject | MrubyLED | Trigger | MrubyGPIOREAD | MrubyPWM | Delay;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
   const parsed = JSON.parse(json) as flows;
   return parsed.filter((n) => {
-    const nodeType = ["debug", "inject", "LED", "trigger", "GPIO-Read"];
+    const nodeType = ["debug", "inject", "LED", "trigger", "GPIO-Read","PWM","delay"];
     return nodeType.includes(n.type);
   });
 };
@@ -87,7 +91,7 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
 
 const toNodeOutput = (
   node: Node 
-): InjectNode | TriggerNode | LEDNode | DebugNode | GPIOREADNode => {
+): InjectNode | TriggerNode | LEDNode | DebugNode | GPIOREADNode | PWMNode | DelayNode => {
   switch (node.type) {
     case "inject":
       return new InjectNode(node.data as Inject, node.wires.map(toNodeOutput));
@@ -102,6 +106,10 @@ const toNodeOutput = (
       return new DebugNode(node.data as Debug);
     case "GPIO-Read":
       return new GPIOREADNode(node.data as MrubyGPIOREAD,node.wires.map(toNodeOutput));
+    case "PWM":
+      return new PWMNode(node.data as MrubyPWM,node.wires.map(toNodeOutput));
+    case "delay":
+      return new DelayNode(node.data as Delay,node.wires.map(toNodeOutput));
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
