@@ -14,7 +14,7 @@ export interface Debug {
   console: boolean;
   /* 関係ない? */
   tostatus: boolean;
-  /* payloadが入っていた */
+  /* 指定したmsgの対象 */
   complete: string;
   /* msgだった */
   targetType: string;

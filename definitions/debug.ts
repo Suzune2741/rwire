@@ -3,10 +3,12 @@ import { NodeOutput } from "../types/output.ts";
 
 export class DebugNode implements NodeOutput {
   private readonly nodeID: string;
+  private readonly target: string;
   private NODE_NAME = "debug";
 
   constructor(node: Debug) {
     this.nodeID = node.id;
+    this.target = (node.complete === "payload") ? this.nodeID : "msg_" + node.complete;
   }
 
   getTaskName(): string {
@@ -24,14 +26,14 @@ export class DebugNode implements NodeOutput {
   getNodeInitialisationCode(): string {
     return `$${this.getTaskName()}.run`;
   }
-
+  
   getNodeCodeOutput(): string {
     return `
 Task.name = "${this.getTaskName()}"
 Task.suspend
 
 while true
-  data = getData("${this.nodeID}")
+  data = getData("${this.target}")
   puts data
 
   Task.suspend
