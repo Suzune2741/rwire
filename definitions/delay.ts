@@ -36,6 +36,10 @@ export class DelayNode implements NodeOutput {
         return  `sleep_ms ${timeoutValue}`;
       case "minutes":
         return  `sleep ${timeoutValue} * 60`;
+      case "hours":
+        return  `sleep ${timeoutValue} * 60 * 60`;
+      case "days":
+        return  `sleep ${timeoutValue} * 60 * 60 * 24`;
       default:
         throw new Error("Invalid timeout unit");
     }
