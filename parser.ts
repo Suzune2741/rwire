@@ -75,12 +75,6 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
   };
 
   // 入力データのルートノードを処理（全体をループ処理）
-  // console.log(inputNodes
-  //   .filter(
-  //     (node) =>
-  //       !inputNodes.some((otherNode) => otherNode.wires.includes(node.id))
-  //   ) // ルートノードの判定
-  //   .map((rootNode) => buildNode(rootNode.id)));
   return inputNodes
     .filter(
       (node) =>
@@ -163,6 +157,9 @@ for (let i = 0; i < result.length; i++) {
   };
 
   const c = await buildTaskCodes(codes);
+  // 初期宣言コードを集めて重複を削除
+  const initialisationCodes = codes.map((v) => v.initialisationCodes).flat();
+  const uniqueinits: string[] = Array.from(new Set(new Set(initialisationCodes)));
 
   const output = [
     `
@@ -175,7 +172,7 @@ def sendData(id, data)
   return $data[id]= data
 end
     `,
-    codes.map((v) => v.initialisationCodes.join("\n")).join("\n"),
+    uniqueinits.join("\n"),
     "",
     c.join("\n"),
     "",
