@@ -159,7 +159,7 @@ for (let i = 0; i < result.length; i++) {
   const c = await buildTaskCodes(codes);
   // 初期宣言コードを集めて重複を削除
   const initialisationCodes = codes.map((v) => v.initialisationCodes).flat();
-  const uniqueinits: string[] = Array.from(new Set(new Set(initialisationCodes)));
+  const uniqueinits: string[] = Array.from(new Set(initialisationCodes));
 
   const output = [
     `
