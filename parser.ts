@@ -14,14 +14,16 @@ import { MrubyPWM } from "./types/nodes/mruby-pwm.ts";
 import { PWMNode } from "./definitions/pwm.ts";
 import { Delay } from "./types/nodes/delay.ts";
 import { DelayNode } from "./definitions/delay.ts";
+import { Switch } from "./types/nodes/switch.ts";
+import { SwitchNode } from "./definitions/switch.ts";
 
-type flow = Debug | Inject | MrubyLED | Trigger | MrubyGPIOREAD | MrubyPWM | Delay;
+type flow = Debug | Inject | MrubyLED | Trigger | MrubyGPIOREAD | MrubyPWM | Delay | Switch;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
   const parsed = JSON.parse(json) as flows;
   return parsed.filter((n) => {
-    const nodeType = ["debug", "inject", "LED", "trigger", "GPIO-Read","PWM","delay"];
+    const nodeType = ["debug", "inject", "LED", "trigger", "GPIO-Read","PWM","delay","switch"];
     return nodeType.includes(n.type);
   });
 };
@@ -30,7 +32,7 @@ type InputNode = {
   id: string;
   type: string;
   data: flow;
-  wires: string[];
+  wires: string[] | string[][]; 
 };
 
 const parsed = parseJSON(Deno.readTextFileSync("flows.json"));
@@ -39,7 +41,7 @@ const input: InputNode[] = parsed.map((n) => {
     id: n.id,
     type: n.type,
     data: n,
-    wires: n.wires.flat(),
+    wires: n.wires,
   };
 });
 
@@ -47,8 +49,21 @@ type Node = {
   id: string;
   type: string;
   data: flow;
-  wires: Node[];
+  wires: Node[][]; 
 };
+
+// wires配列を正規化する関数（一次元・二次元両方に対応）
+function normalizeWires(wires: string[] | string[][]): string[][] {
+  if (wires.length === 0) return [];
+  
+  // 最初の要素が文字列なら一次元配列として扱う
+  if (typeof wires[0] === 'string') {
+    return [wires as string[]];
+  }
+  
+  // 既に二次元配列の場合はそのまま返す
+  return wires as string[][];
+}
 
 function transformToNode(inputNodes: InputNode[]): Node[] {
   // 入力データを検索しやすいようにマップに変換
@@ -60,50 +75,73 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
    */
   const buildNode = (id: string): Node => {
     const inputNode = nodeMap.get(id);
-
+    //console.log("id: "+ id + " : "+nodeMap.get(id)?.wires)
     if (inputNode === undefined) {
       throw new Error(`Node with id ${id} not found`);
     }
-
-    // `wires` を再帰的に展開
+    
+    // wiresを正規化（一次元・二次元両方に対応）
+    const normalizedWires = normalizeWires(inputNode.wires);
+    // 各出力ポートの接続先ノードを構築
+    const wireNodes: Node[][] = normalizedWires.map(outputWires => 
+      outputWires.map(buildNode)
+    );
+    
     return {
       id: inputNode.id,
       type: inputNode.type,
-      wires: inputNode.wires.map(buildNode), // 子ノードを再帰的に処理
+      wires: wireNodes,
       data: inputNode.data,
     };
   };
 
-  // 入力データのルートノードを処理（全体をループ処理）
+  const isRootNode = (node: InputNode): boolean => {
+    const nodeId = node.id;
+    return !inputNodes.some(otherNode => {
+      const normalizedWires = normalizeWires(otherNode.wires);
+      return normalizedWires.some(outputWires => 
+        outputWires.includes(nodeId)
+      );
+    });
+  };
+
+  // 入力データのルートノードを処理
   return inputNodes
-    .filter(
-      (node) =>
-        !inputNodes.some((otherNode) => otherNode.wires.includes(node.id))
-    ) // ルートノードの判定
+    .filter(isRootNode)
     .map((rootNode) => buildNode(rootNode.id));
 }
 
 const toNodeOutput = (
   node: Node 
-): InjectNode | TriggerNode | LEDNode | DebugNode | GPIOREADNode | PWMNode | DelayNode => {
+): InjectNode | TriggerNode | LEDNode | DebugNode | GPIOREADNode | PWMNode | DelayNode | SwitchNode => {
+  // 全ての出力ポートの接続先ノードを平坦化
+  const allConnectedNodes = node.wires.flat().map(toNodeOutput);
+  
   switch (node.type) {
     case "inject":
-      return new InjectNode(node.data as Inject, node.wires.map(toNodeOutput));
+      return new InjectNode(node.data as Inject, allConnectedNodes);
     case "trigger":
       return new TriggerNode(
         node.data as Trigger,
-        node.wires.map(toNodeOutput)
+        allConnectedNodes
       );
     case "LED":
       return new LEDNode(node.data as MrubyLED);
     case "debug":
       return new DebugNode(node.data as Debug);
     case "GPIO-Read":
-      return new GPIOREADNode(node.data as MrubyGPIOREAD,node.wires.map(toNodeOutput));
+      return new GPIOREADNode(node.data as MrubyGPIOREAD, allConnectedNodes);
     case "PWM":
-      return new PWMNode(node.data as MrubyPWM,node.wires.map(toNodeOutput));
+      return new PWMNode(node.data as MrubyPWM, allConnectedNodes);
     case "delay":
-      return new DelayNode(node.data as Delay,node.wires.map(toNodeOutput));
+      return new DelayNode(node.data as Delay, allConnectedNodes);
+    case "switch":
+    {
+      const portNodes = node.wires.map(outputWires => 
+        outputWires.map(toNodeOutput)
+      );
+      return new SwitchNode(node.data as Switch, allConnectedNodes,portNodes);
+    }
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
@@ -111,7 +149,6 @@ const toNodeOutput = (
 
 type codeOutput = {
   nodeID: string;
-
   code: string;
   initialisationCode: string;
   initialisationCodes: string[];
