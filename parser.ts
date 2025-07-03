@@ -16,14 +16,16 @@ import { Delay } from "./types/nodes/delay.ts";
 import { DelayNode } from "./definitions/delay.ts";
 import { Switch } from "./types/nodes/switch.ts";
 import { SwitchNode } from "./definitions/switch.ts";
+import { MrubyGPIOWRITE } from "./types/nodes/gpio_write.ts";
+import { GPIOWRITENode } from "./definitions/gpio_write.ts";
 
-type flow = Debug | Inject | MrubyLED | Trigger | MrubyGPIOREAD | MrubyPWM | Delay | Switch;
+type flow = Debug | Inject | MrubyLED | Trigger | MrubyGPIOREAD | MrubyPWM | Delay | Switch | MrubyGPIOWRITE;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
   const parsed = JSON.parse(json) as flows;
   return parsed.filter((n) => {
-    const nodeType = ["debug", "inject", "LED", "trigger", "GPIO-Read","PWM","delay","switch"];
+    const nodeType = ["debug", "inject", "LED", "trigger", "GPIO-Read","PWM","delay","switch","GPIO-Write-1"];
     return nodeType.includes(n.type);
   });
 };
@@ -52,7 +54,7 @@ type Node = {
   wires: Node[][]; 
 };
 
-// wires配列を正規化する関数（一次元・二次元両方に対応）
+// wires配列を正規化する
 function normalizeWires(wires: string[] | string[][]): string[][] {
   if (wires.length === 0) return [];
   
@@ -75,12 +77,10 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
    */
   const buildNode = (id: string): Node => {
     const inputNode = nodeMap.get(id);
-    //console.log("id: "+ id + " : "+nodeMap.get(id)?.wires)
     if (inputNode === undefined) {
       throw new Error(`Node with id ${id} not found`);
     }
     
-    // wiresを正規化（一次元・二次元両方に対応）
     const normalizedWires = normalizeWires(inputNode.wires);
     // 各出力ポートの接続先ノードを構築
     const wireNodes: Node[][] = normalizedWires.map(outputWires => 
@@ -113,8 +113,7 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
 
 const toNodeOutput = (
   node: Node 
-): InjectNode | TriggerNode | LEDNode | DebugNode | GPIOREADNode | PWMNode | DelayNode | SwitchNode => {
-  // 全ての出力ポートの接続先ノードを平坦化
+): InjectNode | TriggerNode | LEDNode | DebugNode | GPIOREADNode | PWMNode | DelayNode | SwitchNode | GPIOWRITENode => {
   const allConnectedNodes = node.wires.flat().map(toNodeOutput);
   
   switch (node.type) {
@@ -142,6 +141,8 @@ const toNodeOutput = (
       );
       return new SwitchNode(node.data as Switch, allConnectedNodes,portNodes);
     }
+    case "GPIO-Write-1":
+      return new GPIOWRITENode(node.data as MrubyGPIOWRITE);
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
