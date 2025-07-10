@@ -61,9 +61,9 @@ export class SwitchNode implements NodeOutput {
         const portNodes = this.nextNodesByPort[index] || [];
         const formattedValue = this.formatValue(rule.v, rule.vt);
 
-        return `if data ${rulesMap.get(rule.t)} ${formattedValue}
-puts data
-${portNodes.map((n) => `sendData("${n.getNodeID()}",data)`).join("\n")}
+        return `if getData("${this.nodeID}") ${rulesMap.get(
+          rule.t
+        )} ${formattedValue}
 ${portNodes.map((n) => n.getCallCodes()).join("\n")}
 end`;
       });
@@ -73,8 +73,9 @@ end`;
         const portNodes = this.nextNodesByPort[index] || [];
         const formattedValue = this.formatValue(rule.v, rule.vt);
 
-        return `if getData("msg_${this.property}") ${rulesMap.get(rule.t)} ${formattedValue}
-${portNodes.map((n) => `sendData("${n.getNodeID()}",data)`).join("\n")}
+        return `if getData("msg_${this.property}") ${rulesMap.get(
+          rule.t
+        )} ${formattedValue}
 ${portNodes.map((n) => n.getCallCodes()).join("\n")}
 end`;
       });
@@ -85,7 +86,6 @@ end`;
     return `
 Task.suspend
 while true
-data = getData("${this.nodeID}")
 ${this.rules.map((n) => n).join("\n")}
 Task.suspend
 end

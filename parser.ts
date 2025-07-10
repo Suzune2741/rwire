@@ -18,14 +18,37 @@ import { Switch } from "./types/nodes/switch.ts";
 import { SwitchNode } from "./definitions/switch.ts";
 import { MrubyGPIOWRITE } from "./types/nodes/gpio_write.ts";
 import { GPIOWRITENode } from "./definitions/gpio_write.ts";
+import { MrubyADC } from "./types/nodes/mruby-adc.ts";
+import { ADCNode } from "./definitions/adc.ts";
 
-type flow = Debug | Inject | MrubyLED | Trigger | MrubyGPIOREAD | MrubyPWM | Delay | Switch | MrubyGPIOWRITE;
+type flow =
+  | Debug
+  | Inject
+  | MrubyLED
+  | Trigger
+  | MrubyGPIOREAD
+  | MrubyPWM
+  | Delay
+  | Switch
+  | MrubyGPIOWRITE
+  | MrubyADC;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
   const parsed = JSON.parse(json) as flows;
   return parsed.filter((n) => {
-    const nodeType = ["debug", "inject", "LED", "trigger", "GPIO-Read","PWM","delay","switch","GPIO-Write-1"];
+    const nodeType = [
+      "debug",
+      "inject",
+      "LED",
+      "trigger",
+      "GPIO-Read",
+      "PWM",
+      "delay",
+      "switch",
+      "GPIO-Write-1",
+      "ADC",
+    ];
     return nodeType.includes(n.type);
   });
 };
@@ -34,7 +57,7 @@ type InputNode = {
   id: string;
   type: string;
   data: flow;
-  wires: string[] | string[][]; 
+  wires: string[] | string[][];
 };
 
 const parsed = parseJSON(Deno.readTextFileSync("flows.json"));
@@ -51,18 +74,18 @@ type Node = {
   id: string;
   type: string;
   data: flow;
-  wires: Node[][]; 
+  wires: Node[][];
 };
 
 // wires配列を正規化する
 function normalizeWires(wires: string[] | string[][]): string[][] {
   if (wires.length === 0) return [];
-  
+
   // 最初の要素が文字列なら一次元配列として扱う
-  if (typeof wires[0] === 'string') {
+  if (typeof wires[0] === "string") {
     return [wires as string[]];
   }
-  
+
   // 既に二次元配列の場合はそのまま返す
   return wires as string[][];
 }
@@ -80,13 +103,13 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
     if (inputNode === undefined) {
       throw new Error(`Node with id ${id} not found`);
     }
-    
+
     const normalizedWires = normalizeWires(inputNode.wires);
     // 各出力ポートの接続先ノードを構築
-    const wireNodes: Node[][] = normalizedWires.map(outputWires => 
+    const wireNodes: Node[][] = normalizedWires.map((outputWires) =>
       outputWires.map(buildNode)
     );
-    
+
     return {
       id: inputNode.id,
       type: inputNode.type,
@@ -97,9 +120,9 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
 
   const isRootNode = (node: InputNode): boolean => {
     const nodeId = node.id;
-    return !inputNodes.some(otherNode => {
+    return !inputNodes.some((otherNode) => {
       const normalizedWires = normalizeWires(otherNode.wires);
-      return normalizedWires.some(outputWires => 
+      return normalizedWires.some((outputWires) =>
         outputWires.includes(nodeId)
       );
     });
@@ -112,18 +135,25 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
 }
 
 const toNodeOutput = (
-  node: Node 
-): InjectNode | TriggerNode | LEDNode | DebugNode | GPIOREADNode | PWMNode | DelayNode | SwitchNode | GPIOWRITENode => {
+  node: Node
+):
+  | InjectNode
+  | TriggerNode
+  | LEDNode
+  | DebugNode
+  | GPIOREADNode
+  | PWMNode
+  | DelayNode
+  | SwitchNode
+  | GPIOWRITENode
+  | ADCNode => {
   const allConnectedNodes = node.wires.flat().map(toNodeOutput);
-  
+
   switch (node.type) {
     case "inject":
       return new InjectNode(node.data as Inject, allConnectedNodes);
     case "trigger":
-      return new TriggerNode(
-        node.data as Trigger,
-        allConnectedNodes
-      );
+      return new TriggerNode(node.data as Trigger, allConnectedNodes);
     case "LED":
       return new LEDNode(node.data as MrubyLED);
     case "debug":
@@ -134,15 +164,16 @@ const toNodeOutput = (
       return new PWMNode(node.data as MrubyPWM, allConnectedNodes);
     case "delay":
       return new DelayNode(node.data as Delay, allConnectedNodes);
-    case "switch":
-    {
-      const portNodes = node.wires.map(outputWires => 
+    case "switch": {
+      const portNodes = node.wires.map((outputWires) =>
         outputWires.map(toNodeOutput)
       );
-      return new SwitchNode(node.data as Switch, allConnectedNodes,portNodes);
+      return new SwitchNode(node.data as Switch, allConnectedNodes, portNodes);
     }
     case "GPIO-Write-1":
       return new GPIOWRITENode(node.data as MrubyGPIOWRITE);
+    case "ADC":
+      return new ADCNode(node.data as MrubyADC, allConnectedNodes);
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
