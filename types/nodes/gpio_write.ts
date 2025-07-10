@@ -1,7 +1,7 @@
 export interface MrubyGPIOWRITE {
     id:string;
     //GPIO-Write-1
-    type:string;
+    type:"GPIO-Write-1";
     z:string;
     name:string;
     // PWM or digital_write
