@@ -20,6 +20,8 @@ import { MrubyGPIOWRITE } from "./types/nodes/gpio_write.ts";
 import { GPIOWRITENode } from "./definitions/gpio_write.ts";
 import { MrubyADC } from "./types/nodes/mruby-adc.ts";
 import { ADCNode } from "./definitions/adc.ts";
+import { MrubyConstant } from "./types/nodes/mruby-constant.ts";
+import { ConstantNode } from "./definitions/constant.ts";
 
 type flow =
   | Debug
@@ -31,7 +33,8 @@ type flow =
   | Delay
   | Switch
   | MrubyGPIOWRITE
-  | MrubyADC;
+  | MrubyADC
+  | MrubyConstant;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
@@ -48,6 +51,7 @@ export const parseJSON = (json: string): flows => {
       "switch",
       "GPIO-Write-1",
       "ADC",
+      "Constant",
     ];
     return nodeType.includes(n.type);
   });
@@ -146,7 +150,8 @@ const toNodeOutput = (
   | DelayNode
   | SwitchNode
   | GPIOWRITENode
-  | ADCNode => {
+  | ADCNode
+  | ConstantNode => {
   const allConnectedNodes = node.wires.flat().map(toNodeOutput);
 
   switch (node.type) {
@@ -174,6 +179,8 @@ const toNodeOutput = (
       return new GPIOWRITENode(node.data as MrubyGPIOWRITE);
     case "ADC":
       return new ADCNode(node.data as MrubyADC, allConnectedNodes);
+    case "Constant":
+      return new ConstantNode(node.data as MrubyConstant, allConnectedNodes);
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
