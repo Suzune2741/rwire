@@ -49,32 +49,32 @@ export class SwitchNode implements NodeOutput {
       ["neq", "!="],
       ["lt", "<"],
       ["lte", "<="],
-      ["ge",">"],
-      ["gte",">="]
+      ["ge", ">"],
+      ["gte", ">="],
     ]);
 
-    if (this.propertyType == "env") {
-      // 環境変数の場合
+    //プロパティがpayloadの場合は前のノードから送られてくるデータを取得して分配
+    // それ以外はmsgを前に付けて取得
+    //受け取ったデータはそのまま後ろのノードへ流す
+    if (this.property == "payload") {
       const ruleText = nodeRules.map((rule, index) => {
         const portNodes = this.nextNodesByPort[index] || [];
         const formattedValue = this.formatValue(rule.v, rule.vt);
 
-        return `if getData("${this.getNodeID()}") ${rulesMap.get(
-          rule.t
-        )} ${formattedValue}
+        return `if data ${rulesMap.get(rule.t)} ${formattedValue}
+puts data
+${portNodes.map((n) => `sendData("${n.getNodeID()}",data)`).join("\n")}
 ${portNodes.map((n) => n.getCallCodes()).join("\n")}
 end`;
       });
       return ruleText;
     } else {
-      // 通常のプロパティの場合
       const ruleText = nodeRules.map((rule, index) => {
         const portNodes = this.nextNodesByPort[index] || [];
         const formattedValue = this.formatValue(rule.v, rule.vt);
 
-        return `if getData("msg_${this.property}") ${rulesMap.get(
-          rule.t
-        )} ${formattedValue}
+        return `if getData("msg_${this.property}") ${rulesMap.get(rule.t)} ${formattedValue}
+${portNodes.map((n) => `sendData("${n.getNodeID()}",data)`).join("\n")}
 ${portNodes.map((n) => n.getCallCodes()).join("\n")}
 end`;
       });
@@ -85,6 +85,7 @@ end`;
     return `
 Task.suspend
 while true
+data = getData("${this.nodeID}")
 ${this.rules.map((n) => n).join("\n")}
 Task.suspend
 end
