@@ -24,6 +24,8 @@ import { MrubyConstant } from "./types/nodes/mruby-constant.ts";
 import { ConstantNode } from "./definitions/constant.ts";
 import { MrubyFunctionRuby } from "./types/nodes/mruby-function-ruby.ts";
 import { FunctionRubyNode } from "./definitions/function_ruby.ts";
+import { MrubyBUTTON } from "./types/nodes/mruby-button.ts";
+import { BUTTONNode } from "./definitions/button.ts";
 
 type flow =
   | Debug
@@ -37,7 +39,8 @@ type flow =
   | MrubyGPIOWRITE
   | MrubyADC
   | MrubyConstant
-  | MrubyFunctionRuby;
+  | MrubyFunctionRuby
+  | MrubyBUTTON;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
@@ -56,6 +59,7 @@ export const parseJSON = (json: string): flows => {
       "ADC",
       "Constant",
       "function-Code",
+      "Button",
     ];
     return nodeType.includes(n.type);
   });
@@ -156,7 +160,8 @@ const toNodeOutput = (
   | GPIOWRITENode
   | ADCNode
   | ConstantNode
-  | FunctionRubyNode => {
+  | FunctionRubyNode
+  | BUTTONNode => {
   const allConnectedNodes = node.wires.flat().map(toNodeOutput);
 
   switch (node.type) {
@@ -191,6 +196,8 @@ const toNodeOutput = (
         node.data as MrubyFunctionRuby,
         allConnectedNodes
       );
+    case "Button":
+      return new BUTTONNode(node.data as MrubyBUTTON, allConnectedNodes);
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
