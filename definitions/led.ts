@@ -4,10 +4,12 @@ import { NodeOutput } from "../types/output.ts";
 export class LEDNode implements NodeOutput {
   private readonly nodeID: string;
   private readonly targetPort: string;
+  private readonly targetPort_mode: string;
   private NODE_NAME = "led";
   constructor(node: MrubyLED) {
     this.nodeID = node.id;
     this.targetPort = node.targetPort;
+    this.targetPort_mode = node.targetPort_mode;
   }
 
   getNodeID(): string {
@@ -30,7 +32,8 @@ export class LEDNode implements NodeOutput {
   }
 
   getNodeCodeOutput(): string {
-    return `
+    if (this.targetPort_mode == "2") {
+      return `
 Task.suspend
 while true
     data = getData("${this.nodeID}")
@@ -42,6 +45,15 @@ while true
     Task.suspend
 end
 `;
+    } else {
+      return `
+Task.suspend
+while true
+    $led${this.targetPort}.write(${this.targetPort_mode})
+    Task.suspend
+end
+`;
+    }
   }
 
   getCallCodes(): string {

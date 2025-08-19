@@ -7,7 +7,7 @@ export interface MrubyLED {
   LEDtype: string;
   /* 空文字列が入っていた */
   targetPort: string;
-  /* 0が入っている */
+  /* デフォルト値は0.常に0なら0,常に1なら1,入力で切り替えるなら2になっている*/
   targetPort_mode: string,
   /* 1が入っている */
   onBoardLED: string
