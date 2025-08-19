@@ -231,7 +231,18 @@ const collectCode = (node: NodeOutput): codeOutput[] => {
 
 // 実行
 const result = transformToNode(input);
-
+// ノードのデータ受け渡しに必要な関数を生成
+const dataPass = `
+$data = {}
+def getData (id)
+  a = $data[id]
+  return a
+end
+def sendData(id, data)
+  return $data[id]= data
+end
+    `;
+console.log(dataPass);
 // それぞれのノードに対して、getNodeCodeOutput()を呼び出し、コードを生成
 for (let i = 0; i < result.length; i++) {
   const res = toNodeOutput(result[i]);
@@ -255,16 +266,7 @@ for (let i = 0; i < result.length; i++) {
   const uniqueinits: string[] = Array.from(new Set(initialisationCodes));
 
   const output = [
-    `
-$data = {}
-def getData (id)
-  a = $data[id]
-  return a
-end
-def sendData(id, data)
-  return $data[id]= data
-end
-    `,
+    ,
     uniqueinits.join("\n"),
     "",
     c.join("\n"),
