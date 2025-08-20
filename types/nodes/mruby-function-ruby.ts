@@ -4,7 +4,7 @@ export interface MrubyFunctionRuby {
   z: string;
   name: string;
   //Node-REDで作成したrubyコード
-  func: string[];
+  func: string;
   x: number;
   y: number;
   wires: string[];

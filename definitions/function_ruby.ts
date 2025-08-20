@@ -3,7 +3,7 @@ import { NodeOutput } from "../types/output.ts";
 
 export class FunctionRubyNode implements NodeOutput {
   private readonly nodeID: string;
-  private readonly functionData: string[];
+  private readonly functionData: string;
   private NODE_NAME = "function_Code";
   private readonly nextNodes: NodeOutput[];
   constructor(node: MrubyFunctionRuby, nextNodes: NodeOutput[]) {
@@ -24,11 +24,33 @@ export class FunctionRubyNode implements NodeOutput {
   getNodeInitialisationCode(): string {
     return `$${this.NODE_NAME}_${this.nodeID}.run`;
   }
+  private convertReturnToSendData(
+    functionData: string,
+    nodeId: string
+  ): string {
+    return functionData
+      .split("\n")
+      .map((line) => {
+        const trimmedLine = line.trim();
+        if (trimmedLine.startsWith("return ")) {
+          // return文をsendData呼び出しに置き換え
+          const indentation = line.match(/^\s*/)?.[0] || "";
+          return `${indentation}sendData("${nodeId}",data)`;
+        }
+
+        return line;
+      })
+      .join("\n");
+  }
   getNodeCodeOutput(): string {
-    return `puts "TEST"
+    const convertedFunctionData = this.convertReturnToSendData(
+      this.functionData,
+      this.getNodeID()
+    );
+    return `
 Task.suspend
 while true
-${this.functionData}
+${convertedFunctionData}
   ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
 Task.suspend
 end`;
