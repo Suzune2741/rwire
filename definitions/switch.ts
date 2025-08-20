@@ -49,7 +49,7 @@ export class SwitchNode implements NodeOutput {
       ["neq", "!="],
       ["lt", "<"],
       ["lte", "<="],
-      ["ge", ">"],
+      ["gt", ">"],
       ["gte", ">="],
     ]);
 

@@ -24,6 +24,9 @@ export class ConstantNode implements NodeOutput {
   getNodeInitialisationCode(): string {
     return `$${this.NODE_NAME}_${this.nodeID}.run`;
   }
+  getConstant(): string{
+    return this.constant;
+  }
   getNodeCodeOutput(): string {
     return `Task.suspend
 while true
