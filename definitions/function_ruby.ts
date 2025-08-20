@@ -33,9 +33,12 @@ export class FunctionRubyNode implements NodeOutput {
       .map((line) => {
         const trimmedLine = line.trim();
         if (trimmedLine.startsWith("return ")) {
-          // return文をsendData呼び出しに置き換え
+          // return文の返す値を取得
+          const returnValue = trimmedLine
+            .replace(/^return\s+/, "")
+            .replace(/;$/, "");
           const indentation = line.match(/^\s*/)?.[0] || "";
-          return `${indentation}sendData("${nodeId}",data)`;
+          return `${indentation}sendData("${nodeId}",${returnValue})`;
         }
 
         return line;
@@ -50,6 +53,7 @@ export class FunctionRubyNode implements NodeOutput {
     return `
 Task.suspend
 while true
+data = getData("${this.nodeID}")
 ${convertedFunctionData}
   ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
 Task.suspend
