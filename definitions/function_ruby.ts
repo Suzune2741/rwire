@@ -24,10 +24,7 @@ export class FunctionRubyNode implements NodeOutput {
   getNodeInitialisationCode(): string {
     return `$${this.NODE_NAME}_${this.nodeID}.run`;
   }
-  private convertReturnToSendData(
-    functionData: string,
-    nodeId: string
-  ): string {
+  private convertReturnToSendData(functionData: string): string {
     return functionData
       .split("\n")
       .map((line) => {
@@ -38,7 +35,11 @@ export class FunctionRubyNode implements NodeOutput {
             .replace(/^return\s+/, "")
             .replace(/;$/, "");
           const indentation = line.match(/^\s*/)?.[0] || "";
-          return `${indentation}sendData("${nodeId}",${returnValue})`;
+          return this.nextNodes
+            .map(
+              (n) => `${indentation}sendData("${n.getNodeID()}",${returnValue})`
+            )
+            .join("\n");
         }
 
         return line;
@@ -47,14 +48,13 @@ export class FunctionRubyNode implements NodeOutput {
   }
   getNodeCodeOutput(): string {
     const convertedFunctionData = this.convertReturnToSendData(
-      this.functionData,
-      this.getNodeID()
+      this.functionData
     );
     return `
 Task.suspend
 while true
-data = getData("${this.nodeID}")
-${convertedFunctionData}
+  data = getData("${this.nodeID}")
+  ${convertedFunctionData}
   ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
 Task.suspend
 end`;
