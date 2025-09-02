@@ -12,14 +12,14 @@ export interface Inject {
             v?: string | number | boolean | JSON 
         }
     ],
-    /* 不明 */
-    repeat: number,
+    /* 繰り返して動かす場合に入力した時間間隔*/
+    repeat: string,
     crontab: "",
-    /* 1度だけ実行するか */
+    /* 1度だけ実行するか.「Node-RED起動後の[]秒後以下を行う」にチェックを入れた場合にtrueになる*/
     once: boolean
     /* 1回分の待ち時間 */
     onceDelay: number
-    /* 空文字列だった */
+    /* 空文字列だった.msg.topicに入力した値が格納される. */
     topic: string
     /* 送るデータ */
     payload: string
