@@ -26,6 +26,8 @@ import { MrubyFunctionRuby } from "./types/nodes/mruby-function-ruby.ts";
 import { FunctionRubyNode } from "./definitions/function_ruby.ts";
 import { MrubyBUTTON } from "./types/nodes/mruby-button.ts";
 import { BUTTONNode } from "./definitions/button.ts";
+import { MrubyI2C } from "./types/nodes/mruby-i2c.ts";
+import { I2CNode } from "./definitions/i2c.ts";
 
 type flow =
   | Debug
@@ -40,7 +42,8 @@ type flow =
   | MrubyADC
   | MrubyConstant
   | MrubyFunctionRuby
-  | MrubyBUTTON;
+  | MrubyBUTTON
+  | MrubyI2C;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
@@ -60,6 +63,8 @@ export const parseJSON = (json: string): flows => {
       "Constant",
       "function-Code",
       "Button",
+      "initLCD",
+      "I2C"
     ];
     return nodeType.includes(n.type);
   });
@@ -161,7 +166,8 @@ const toNodeOutput = (
   | ADCNode
   | ConstantNode
   | FunctionRubyNode
-  | BUTTONNode => {
+  | BUTTONNode
+  | I2CNode => {
   const allConnectedNodes = node.wires.flat().map(toNodeOutput);
 
   switch (node.type) {
@@ -198,6 +204,10 @@ const toNodeOutput = (
       );
     case "Button":
       return new BUTTONNode(node.data as MrubyBUTTON, allConnectedNodes);
+    case "initLCD":
+      return new I2CNode(node.data as MrubyI2C, allConnectedNodes);
+    case "I2C":
+      return new I2CNode(node.data as MrubyI2C, allConnectedNodes);
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
