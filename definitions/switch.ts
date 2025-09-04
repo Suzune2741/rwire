@@ -39,7 +39,7 @@ export class SwitchNode implements NodeOutput {
       case "num":
         return value;
       default:
-        return `"${value}"`;
+        return "";
     }
   }
   getRules(nodeRules: { t: string; v: string; vt: string }[]) {
@@ -51,11 +51,16 @@ export class SwitchNode implements NodeOutput {
       ["lte", "<="],
       ["gt", ">"],
       ["gte", ">="],
+      ["true","== true"],
+      ["false","== false"],
+      ["null",".nil?"],
+      ["nnull",""],
+      ["empty",".empty?"],
     ]);
 
-    //プロパティがpayloadの場合は前のノードから送られてくるデータを取得して分配
-    // それ以外はmsgを前に付けて取得
-    //受け取ったデータはそのまま後ろのノードへ流す
+    // プロパティがpayloadの場合は前のノードから送られてくるデータを取得する
+    // それ以外はmsgを前に付けてgetDataで取得
+    // trueなら1 falseなら0を返す
     if (this.property == "payload") {
       const ruleText = nodeRules.map((rule, index) => {
         const portNodes = this.nextNodesByPort[index] || [];
@@ -64,6 +69,10 @@ export class SwitchNode implements NodeOutput {
         return `if getData("${this.nodeID}") ${rulesMap.get(
           rule.t
         )} ${formattedValue}
+${portNodes.map((n) => `sendData("${n.getNodeID()}",1)`).join("\n")}
+${portNodes.map((n) => n.getCallCodes()).join("\n")}
+else
+${portNodes.map((n) => `sendData("${n.getNodeID()}",0)`).join("\n")}
 ${portNodes.map((n) => n.getCallCodes()).join("\n")}
 end`;
       });
@@ -76,6 +85,10 @@ end`;
         return `if getData("msg_${this.property}") ${rulesMap.get(
           rule.t
         )} ${formattedValue}
+${portNodes.map((n) => `sendData("${n.getNodeID()}",1)`).join("\n")}
+${portNodes.map((n) => n.getCallCodes()).join("\n")}
+else
+${portNodes.map((n) => `sendData("${n.getNodeID()}",1)`).join("\n")}
 ${portNodes.map((n) => n.getCallCodes()).join("\n")}
 end`;
       });
