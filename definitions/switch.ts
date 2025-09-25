@@ -51,11 +51,11 @@ export class SwitchNode implements NodeOutput {
       ["lte", "<="],
       ["gt", ">"],
       ["gte", ">="],
-      ["true","== true"],
-      ["false","== false"],
-      ["null",".nil?"],
-      ["nnull",""],
-      ["empty",".empty?"],
+      ["true", "== true"],
+      ["false", "== false"],
+      ["null", ".nil?"],
+      ["nnull", ""],
+      ["empty", ".empty?"],
     ]);
 
     // プロパティがpayloadの場合は前のノードから送られてくるデータを取得する
@@ -88,7 +88,7 @@ end`;
 ${portNodes.map((n) => `sendData("${n.getNodeID()}",1)`).join("\n")}
 ${portNodes.map((n) => n.getCallCodes()).join("\n")}
 else
-${portNodes.map((n) => `sendData("${n.getNodeID()}",1)`).join("\n")}
+${portNodes.map((n) => `sendData("${n.getNodeID()}",0)`).join("\n")}
 ${portNodes.map((n) => n.getCallCodes()).join("\n")}
 end`;
       });
