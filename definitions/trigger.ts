@@ -1,5 +1,6 @@
 import { Trigger } from "../types/nodes/trigger.ts";
 import { NodeOutput } from "../types/output.ts";
+import { calculateTime } from "../utils/calculateTime.ts";
 
 export class TriggerNode implements NodeOutput {
   private readonly nodeID: string;
@@ -30,6 +31,7 @@ export class TriggerNode implements NodeOutput {
   }
 
   getNodeCodeOutput(): string {
+    const sleepTime = calculateTime(this.config.units,this.config.duration)
     return `
 Task.suspend
 
@@ -40,7 +42,7 @@ while true
     .join("\n")}
   ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
 
-  sleep ${Number(this.config.duration)}
+  ${sleepTime}
 
   ${this.nextNodes
     .map((n) => `sendData("${n.getNodeID()}", ${this.config.op2})`)

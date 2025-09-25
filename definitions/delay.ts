@@ -1,6 +1,6 @@
 import { Delay } from "../types/nodes/delay.ts";
 import { NodeOutput } from "../types/output.ts";
-
+import { calculateTime } from "../utils/calculateTime.ts";
 export class DelayNode implements NodeOutput {
   private readonly nodeID: string;
   private readonly nextNodes: NodeOutput[];
@@ -12,7 +12,7 @@ export class DelayNode implements NodeOutput {
     this.nodeID = node.id;
     this.nextNodes = nextNodes;
     this.timeoutUnits = node.timeoutUnits;
-    this.waitTime = this.getTimeoutValue(this.timeoutUnits, node.timeout);
+    this.waitTime = calculateTime(this.timeoutUnits, node.timeout);
   }
 
   getNodeID(): string {
@@ -27,23 +27,7 @@ export class DelayNode implements NodeOutput {
   getNodeInitialisationCode(): string {
     return `$${this.NODE_NAME}_${this.nodeID}.run`;
   }
-  getTimeoutValue(timeoutUnits:string,timeout:string): string {
-    const timeoutValue = Number(timeout);
-    switch (timeoutUnits) {
-      case "seconds": 
-        return `sleep ${timeoutValue}`;
-      case "milliseconds":
-        return  `sleep_ms ${timeoutValue}`;
-      case "minutes":
-        return  `sleep ${timeoutValue} * 60`;
-      case "hours":
-        return  `sleep ${timeoutValue} * 60 * 60`;
-      case "days":
-        return  `sleep ${timeoutValue} * 60 * 60 * 24`;
-      default:
-        throw new Error("Invalid timeout unit");
-    }
-  }
+
   getNodeCodeOutput(): string {
     return `
 Task.suspend
