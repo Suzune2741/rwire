@@ -1,5 +1,5 @@
 /**
- * 数値を二乗する関数
+ * 時間と単位から出力するsleepを返す変数
  * @param untis  時間の単位
  * @param duration  時間
  * @returns  出力する文字列
