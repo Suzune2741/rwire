@@ -1,6 +1,7 @@
 import { Delay } from "../types/nodes/delay.ts";
 import { NodeOutput } from "../types/output.ts";
 import { calculateTime } from "../utils/calculateTime.ts";
+
 export class DelayNode implements NodeOutput {
   private readonly nodeID: string;
   private readonly nextNodes: NodeOutput[];
@@ -32,7 +33,9 @@ export class DelayNode implements NodeOutput {
     return `
 Task.suspend
 while true
+  data = getData("${this.nodeID}")
   ${this.waitTime}
+  ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",data)`).join("\n")}
   ${this.nextNodes.map((n) => n.getCallCodes())}
   Task.suspend
 end
