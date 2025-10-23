@@ -44,21 +44,17 @@ Task.suspend
 ${this.propsName
   .map((name, index) => `sendData("msg_${name}", "${this.propsData[index]}")`)
   .join("\n")}
-data = 0
-puts ${this.isRepeat}
+
+${this.isRepeat && `data = 0`}
 while true
   print ""
 ${
-  //TODO:trueならば1と0を交互に送信するようにする
   this.isRepeat
     ? this.nextNodes
-        .map(
-          (n) =>
-            `sendData("${n.getNodeID()}", data)
-data = (data + 1)%2  
-puts "data = #{data}"`
-        )
-        .join("\n")
+        .map((n) => `sendData("${n.getNodeID()}", data)`)
+        .join("\n") +
+      "\n" +
+      `data = (data + 1)%2`
     : this.nextNodes.map((n) => `sendData("${n.getNodeID()}", 1)`).join("\n")
 }
 
