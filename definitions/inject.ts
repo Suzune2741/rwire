@@ -20,7 +20,7 @@ export class InjectNode implements NodeOutput {
     this.propsData = node.props
       .filter((prop) => prop.v !== undefined)
       .map((prop) => prop.v) as string[] | number[] | boolean[] | JSON[];
-    this.isRepeat = node.repeat === "" ? true : false;
+    this.isRepeat = node.repeat !== "" ? true : false;
   }
 
   getNodeID(): string {
@@ -44,14 +44,24 @@ Task.suspend
 ${this.propsName
   .map((name, index) => `sendData("msg_${name}", "${this.propsData[index]}")`)
   .join("\n")}
+data = 0
+puts ${this.isRepeat}
 while true
   print ""
 ${
   //TODO:trueならば1と0を交互に送信するようにする
   this.isRepeat
-    ? this.nextNodes.map((n) => `sendData("${n.getNodeID()}", 0)`).join("\n")
+    ? this.nextNodes
+        .map(
+          (n) =>
+            `sendData("${n.getNodeID()}", data)
+data = (data + 1)%2  
+puts "data = #{data}"`
+        )
+        .join("\n")
     : this.nextNodes.map((n) => `sendData("${n.getNodeID()}", 1)`).join("\n")
 }
+
 ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
   sleep ${this.config.repeat}
 end
