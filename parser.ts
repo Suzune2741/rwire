@@ -249,6 +249,27 @@ const collectCode = (node: NodeOutput): codeOutput[] => {
 // TODO: injectノードのrunタイミングを同時にする必要がありそう.
 // 実行
 const result = transformToNode(input);
+// ノードの状態を管理するクラスを生成
+const nodeStateClass = `
+class NodeState
+  def self.set_complete(id)
+    if $node_flags.nil?
+      $node_flags = {} 
+    end
+    $node_flags[id] = true
+  end
+  def self.check_complete(id)
+    if $node_flags.nil?
+      return false
+    end
+    if $node_flags[id]
+      $node_flags[id] = false
+      return true
+    end
+    return false
+  end
+end`;
+console.log(nodeStateClass);
 // ノードのデータ受け渡しに必要な関数を生成
 const dataPass = `
 $data = {}
@@ -258,8 +279,7 @@ def getData (id)
 end
 def sendData(id, data)
   return $data[id]= data
-end
-    `;
+end`;
 console.log(dataPass);
 // それぞれのノードに対して、getNodeCodeOutput()を呼び出し、コードを生成
 for (let i = 0; i < result.length; i++) {

@@ -37,7 +37,7 @@ while true
   ${this.waitTime}
   ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",data)`).join("\n")}
   ${this.nextNodes.map((n) => n.getCallCodes())}
-  puts "Delay end"
+  NodeState.set_complete("${this.nodeID}")
   Task.suspend
 end
     `;
@@ -45,7 +45,6 @@ end
 
   getCallCodes(): string {
     return `if $${this.NODE_NAME}_${this.nodeID}.status == "SUSPENDED"
-      puts "run DELAY"
       $${this.NODE_NAME}_${this.nodeID}.resume
   end`;
   }

@@ -26,22 +26,12 @@ export class CompleteNode implements NodeOutput {
     return `$${this.NODE_NAME}_${this.nodeID}.run`;
   }
   getNodeCodeOutput(): string {
-    return `p "List:#{Task.name_list}"
+    return `
 while true
-  target_task =Task.get("${this.scope[0].slice(0, 15)}")
-  break if target_task 
-  sleep 1
-end
-last_status = target_task.status
-while true
-  status = target_task.status
-  puts "status:#{status} last:#{last_status}"
-  if status != last_status && status == "SUSPENDED"
-    puts "scope is end"
+  if NodeState.check_complete("${this.scope}")
     ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",1)`).join("\n")}
     ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
   end
-  last_status = status
   sleep 0.1
 end`;
   }
