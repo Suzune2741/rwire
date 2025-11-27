@@ -33,7 +33,7 @@ export class LEDNode implements NodeOutput {
 
   getNodeCodeOutput(): string {
     if (this.targetPort_mode == "2") {
-      return `
+      return `Task.name = "${this.nodeID}"
 Task.suspend
 while true
     data = getData("${this.nodeID}")
@@ -57,7 +57,9 @@ end
   }
 
   getCallCodes(): string {
-    return `$${this.NODE_NAME}_${this.nodeID}.resume`;
+    return `if $${this.NODE_NAME}_${this.nodeID}.status == "SUSPENDED"
+      $${this.NODE_NAME}_${this.nodeID}.resume
+end`;
   }
 
   getInitialisationCodes(): string[] {

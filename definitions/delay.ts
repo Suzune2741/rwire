@@ -30,20 +30,24 @@ export class DelayNode implements NodeOutput {
   }
 
   getNodeCodeOutput(): string {
-    return `
+    return `Task.name = "${this.nodeID}"
 Task.suspend
 while true
   data = getData("${this.nodeID}")
   ${this.waitTime}
   ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",data)`).join("\n")}
   ${this.nextNodes.map((n) => n.getCallCodes())}
+  puts "Delay end"
   Task.suspend
 end
     `;
   }
 
   getCallCodes(): string {
-    return `$${this.NODE_NAME}_${this.nodeID}.resume`;
+    return `if $${this.NODE_NAME}_${this.nodeID}.status == "SUSPENDED"
+      puts "run DELAY"
+      $${this.NODE_NAME}_${this.nodeID}.resume
+  end`;
   }
   getInitialisationCodes(): string[] {
     return [];
