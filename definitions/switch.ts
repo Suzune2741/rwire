@@ -7,6 +7,7 @@ export class SwitchNode implements NodeOutput {
   private NODE_NAME = "switch";
   private readonly rules: string[];
   private readonly property;
+  private readonly checkAll: boolean;
   private readonly propertyType: string;
   constructor(
     node: Switch,
@@ -19,6 +20,7 @@ export class SwitchNode implements NodeOutput {
     this.nextNodesByPort = nextNodesByPort;
     this.propertyType = node.propertyType;
     this.rules = this.getRules(node.rules);
+    this.checkAll = node.checkall === "true" ? true : false;
   }
   getNodeID(): string {
     return this.nodeID;
@@ -71,6 +73,11 @@ export class SwitchNode implements NodeOutput {
         )} ${formattedValue}
 ${portNodes.map((n) => `sendData("${n.getNodeID()}",1)`).join("\n")}
 ${portNodes.map((n) => n.getCallCodes()).join("\n")}
+${
+  !this.checkAll &&
+  `Task.suspend 
+next`
+}
 else
 ${portNodes.map((n) => `sendData("${n.getNodeID()}",0)`).join("\n")}
 ${portNodes.map((n) => n.getCallCodes()).join("\n")}
@@ -87,6 +94,11 @@ end`;
         )} ${formattedValue}
 ${portNodes.map((n) => `sendData("${n.getNodeID()}",1)`).join("\n")}
 ${portNodes.map((n) => n.getCallCodes()).join("\n")}
+${
+  !this.checkAll &&
+  `Task.suspend 
+next`
+}
 else
 ${portNodes.map((n) => `sendData("${n.getNodeID()}",0)`).join("\n")}
 ${portNodes.map((n) => n.getCallCodes()).join("\n")}
@@ -100,7 +112,6 @@ end`;
 Task.suspend
 while true
 ${this.rules.map((n) => n).join("\n")}
-Task.suspend
 end
 
 `;

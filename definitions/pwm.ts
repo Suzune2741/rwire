@@ -46,9 +46,11 @@ export class PWMNode implements NodeOutput {
     return `
 Task.suspend
 while true
-    $pwm${this.Pin_num}.freq(${this.frequency})
-    $pwm${this.Pin_num}.duty(${this.duty_rate})
-    ${this.nextNodes.map((n) => n.getCallCodes())}
+    if getData("${this.nodeID}") == 1
+      $pwm${this.Pin_num}.freq(${this.frequency})
+      $pwm${this.Pin_num}.duty(${this.duty_rate})
+      ${this.nextNodes.map((n) => n.getCallCodes())}
+    end
     Task.suspend
 end
 `;
