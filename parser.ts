@@ -28,6 +28,8 @@ import { MrubyBUTTON } from "./types/nodes/mruby-button.ts";
 import { BUTTONNode } from "./definitions/button.ts";
 import { MrubyI2C } from "./types/nodes/mruby-i2c.ts";
 import { I2CNode } from "./definitions/i2c.ts";
+import { CompleteNode } from "./definitions/complete.ts";
+import { Complete } from "./types/nodes/complete.ts";
 
 type flow =
   | Debug
@@ -43,7 +45,8 @@ type flow =
   | MrubyConstant
   | MrubyFunctionRuby
   | MrubyBUTTON
-  | MrubyI2C;
+  | MrubyI2C
+  | Complete;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
@@ -64,7 +67,8 @@ export const parseJSON = (json: string): flows => {
       "function-Code",
       "Button",
       "initLCD",
-      "I2C"
+      "I2C",
+      "complete",
     ];
     return nodeType.includes(n.type);
   });
@@ -167,7 +171,8 @@ const toNodeOutput = (
   | ConstantNode
   | FunctionRubyNode
   | BUTTONNode
-  | I2CNode => {
+  | I2CNode
+  | CompleteNode => {
   const allConnectedNodes = node.wires.flat().map(toNodeOutput);
 
   switch (node.type) {
@@ -208,6 +213,8 @@ const toNodeOutput = (
       return new I2CNode(node.data as MrubyI2C, allConnectedNodes);
     case "I2C":
       return new I2CNode(node.data as MrubyI2C, allConnectedNodes);
+    case "complete":
+      return new CompleteNode(node.data as Complete, allConnectedNodes);
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
@@ -239,6 +246,7 @@ const collectCode = (node: NodeOutput): codeOutput[] => {
   return code;
 };
 
+// TODO: injectノードのrunタイミングを同時にする必要がありそう.
 // 実行
 const result = transformToNode(input);
 // ノードのデータ受け渡しに必要な関数を生成
@@ -276,7 +284,6 @@ for (let i = 0; i < result.length; i++) {
   const uniqueinits: string[] = Array.from(new Set(initialisationCodes));
 
   const output = [
-    ,
     uniqueinits.join("\n"),
     "",
     c.join("\n"),
