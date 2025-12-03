@@ -30,13 +30,14 @@ export class DelayNode implements NodeOutput {
   }
 
   getNodeCodeOutput(): string {
-    return `
+    return `Task.name = "${this.nodeID}"
 Task.suspend
 while true
   data = getData("${this.nodeID}")
   ${this.waitTime}
   ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",data)`).join("\n")}
   ${this.nextNodes.map((n) => n.getCallCodes())}
+  NodeState.set_complete("${this.nodeID}")
   Task.suspend
 end
     `;

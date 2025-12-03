@@ -28,6 +28,8 @@ import { MrubyBUTTON } from "./types/nodes/mruby-button.ts";
 import { BUTTONNode } from "./definitions/button.ts";
 import { MrubyI2C } from "./types/nodes/mruby-i2c.ts";
 import { I2CNode } from "./definitions/i2c.ts";
+import { CompleteNode } from "./definitions/complete.ts";
+import { Complete } from "./types/nodes/complete.ts";
 
 type flow =
   | Debug
@@ -43,7 +45,8 @@ type flow =
   | MrubyConstant
   | MrubyFunctionRuby
   | MrubyBUTTON
-  | MrubyI2C;
+  | MrubyI2C
+  | Complete;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
@@ -64,7 +67,8 @@ export const parseJSON = (json: string): flows => {
       "function-Code",
       "Button",
       "initLCD",
-      "I2C"
+      "I2C",
+      "complete",
     ];
     return nodeType.includes(n.type);
   });
@@ -76,7 +80,10 @@ type InputNode = {
   data: flow;
   wires: string[] | string[][];
 };
-
+export const completeNodeTarget = {
+  completeNodeId: "",
+  targetNodeId: [""],
+};
 const parsed = parseJSON(Deno.readTextFileSync("flows.json"));
 const input: InputNode[] = parsed.map((n) => {
   return {
@@ -137,6 +144,10 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
 
   const isRootNode = (node: InputNode): boolean => {
     const nodeId = node.id;
+    if (node.type === "complete") {
+      completeNodeTarget.targetNodeId = (node.data as Complete).scope;
+      completeNodeTarget.completeNodeId = node.id;
+    }
     return !inputNodes.some((otherNode) => {
       const normalizedWires = normalizeWires(otherNode.wires);
       return normalizedWires.some((outputWires) =>
@@ -167,7 +178,8 @@ const toNodeOutput = (
   | ConstantNode
   | FunctionRubyNode
   | BUTTONNode
-  | I2CNode => {
+  | I2CNode
+  | CompleteNode => {
   const allConnectedNodes = node.wires.flat().map(toNodeOutput);
 
   switch (node.type) {
@@ -208,6 +220,8 @@ const toNodeOutput = (
       return new I2CNode(node.data as MrubyI2C, allConnectedNodes);
     case "I2C":
       return new I2CNode(node.data as MrubyI2C, allConnectedNodes);
+    case "complete":
+      return new CompleteNode(node.data as Complete, allConnectedNodes);
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
@@ -239,6 +253,7 @@ const collectCode = (node: NodeOutput): codeOutput[] => {
   return code;
 };
 
+// TODO: injectノードのrunタイミングを同時にする必要がありそう.
 // 実行
 const result = transformToNode(input);
 // ノードのデータ受け渡しに必要な関数を生成
@@ -250,8 +265,7 @@ def getData (id)
 end
 def sendData(id, data)
   return $data[id]= data
-end
-    `;
+end`;
 console.log(dataPass);
 // それぞれのノードに対して、getNodeCodeOutput()を呼び出し、コードを生成
 for (let i = 0; i < result.length; i++) {
@@ -276,7 +290,6 @@ for (let i = 0; i < result.length; i++) {
   const uniqueinits: string[] = Array.from(new Set(initialisationCodes));
 
   const output = [
-    ,
     uniqueinits.join("\n"),
     "",
     c.join("\n"),
