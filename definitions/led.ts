@@ -1,5 +1,7 @@
+import { completeNodeTarget } from "../parser.ts";
 import { MrubyLED } from "../types/nodes/mruby-led.ts";
 import { NodeOutput } from "../types/output.ts";
+import { checkCompleteTarget } from "../utils/checkCompleteTarget.ts";
 
 export class LEDNode implements NodeOutput {
   private readonly nodeID: string;
@@ -42,6 +44,7 @@ while true
     else
       $led${this.targetPort}.write(0)
     end
+    ${checkCompleteTarget(this.nodeID, completeNodeTarget.targetNodeId)}
     Task.suspend
 end
 `;
@@ -50,6 +53,7 @@ end
 Task.suspend
 while true
     $led${this.targetPort}.write(${this.targetPort_mode})
+    ${checkCompleteTarget(this.nodeID, completeNodeTarget.targetNodeId)}
     Task.suspend
 end
 `;

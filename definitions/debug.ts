@@ -1,5 +1,7 @@
+import { completeNodeTarget } from "../parser.ts";
 import { Debug } from "../types/nodes/debug.ts";
 import { NodeOutput } from "../types/output.ts";
+import { checkCompleteTarget } from "../utils/checkCompleteTarget.ts";
 
 export class DebugNode implements NodeOutput {
   private readonly nodeID: string;
@@ -8,7 +10,8 @@ export class DebugNode implements NodeOutput {
 
   constructor(node: Debug) {
     this.nodeID = node.id;
-    this.target = (node.complete === "payload") ? this.nodeID : "msg_" + node.complete;
+    this.target =
+      node.complete === "payload" ? this.nodeID : "msg_" + node.complete;
   }
 
   getTaskName(): string {
@@ -35,7 +38,7 @@ Task.suspend
 while true
   data = getData("${this.target}")
   puts data
-
+  ${checkCompleteTarget(this.nodeID, completeNodeTarget.targetNodeId)}
   Task.suspend
 end
     `;

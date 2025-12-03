@@ -80,7 +80,10 @@ type InputNode = {
   data: flow;
   wires: string[] | string[][];
 };
-
+export const completeNodeTarget = {
+  completeNodeId: "",
+  targetNodeId: [""],
+};
 const parsed = parseJSON(Deno.readTextFileSync("flows.json"));
 const input: InputNode[] = parsed.map((n) => {
   return {
@@ -141,6 +144,10 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
 
   const isRootNode = (node: InputNode): boolean => {
     const nodeId = node.id;
+    if (node.type === "complete") {
+      completeNodeTarget.targetNodeId = (node.data as Complete).scope;
+      completeNodeTarget.completeNodeId = node.id;
+    }
     return !inputNodes.some((otherNode) => {
       const normalizedWires = normalizeWires(otherNode.wires);
       return normalizedWires.some((outputWires) =>
@@ -249,27 +256,6 @@ const collectCode = (node: NodeOutput): codeOutput[] => {
 // TODO: injectノードのrunタイミングを同時にする必要がありそう.
 // 実行
 const result = transformToNode(input);
-// ノードの状態を管理するクラスを生成
-const nodeStateClass = `
-class NodeState
-  def self.set_complete(id)
-    if $node_flags.nil?
-      $node_flags = {} 
-    end
-    $node_flags[id] = true
-  end
-  def self.check_complete(id)
-    if $node_flags.nil?
-      return false
-    end
-    if $node_flags[id]
-      $node_flags[id] = false
-      return true
-    end
-    return false
-  end
-end`;
-console.log(nodeStateClass);
 // ノードのデータ受け渡しに必要な関数を生成
 const dataPass = `
 $data = {}
