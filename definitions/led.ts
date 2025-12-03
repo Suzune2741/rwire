@@ -44,7 +44,7 @@ while true
     else
       $led${this.targetPort}.write(0)
     end
-    ${checkCompleteTarget(this.nodeID, completeNodeTarget.targetNodeId)}
+    ${checkCompleteTarget(this.nodeID, completeNodeTarget)}
     Task.suspend
 end
 `;
@@ -53,7 +53,7 @@ end
 Task.suspend
 while true
     $led${this.targetPort}.write(${this.targetPort_mode})
-    ${checkCompleteTarget(this.nodeID, completeNodeTarget.targetNodeId)}
+    ${checkCompleteTarget(this.nodeID, completeNodeTarget)}
     Task.suspend
 end
 `;

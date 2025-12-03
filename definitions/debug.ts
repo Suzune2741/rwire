@@ -29,7 +29,7 @@ export class DebugNode implements NodeOutput {
   getNodeInitialisationCode(): string {
     return `$${this.getTaskName()}.run`;
   }
-  
+
   getNodeCodeOutput(): string {
     return `
 Task.name = "${this.getTaskName()}"
@@ -38,7 +38,7 @@ Task.suspend
 while true
   data = getData("${this.target}")
   puts data
-  ${checkCompleteTarget(this.nodeID, completeNodeTarget.targetNodeId)}
+  ${checkCompleteTarget(this.nodeID, completeNodeTarget)}
   Task.suspend
 end
     `;

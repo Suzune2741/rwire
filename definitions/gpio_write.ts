@@ -40,7 +40,7 @@ Task.suspend
 while true
   $pwm${this.targetPort_PWM}.freq(${this.freq})
   $pwm${this.targetPort_PWM}.duty(${this.duty})
-      ${checkCompleteTarget(this.nodeID, completeNodeTarget.targetNodeId)}
+      ${checkCompleteTarget(this.nodeID, completeNodeTarget)}
   Task.suspend
 end
     `;
@@ -49,7 +49,7 @@ end
 Task.suspend
 while true
   data = $gpio${this.targetPort_digital}.write(getData("${this.nodeID}"))
-  ${checkCompleteTarget(this.nodeID, completeNodeTarget.targetNodeId)}
+  ${checkCompleteTarget(this.nodeID, completeNodeTarget)}
   Task.suspend
 end
     `;
