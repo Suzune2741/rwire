@@ -44,9 +44,7 @@ end
   }
 
   getCallCodes(): string {
-    return `if $${this.NODE_NAME}_${this.nodeID}.status == "SUSPENDED"
-      $${this.NODE_NAME}_${this.nodeID}.resume
-  end`;
+    return `$${this.NODE_NAME}_${this.nodeID}.resume`;
   }
   getInitialisationCodes(): string[] {
     return [];
