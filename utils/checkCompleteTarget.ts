@@ -1,7 +1,7 @@
 /**
  * コンプリートノードの監視ターゲットか確認する
  * @param nodeId 確認するノードのID
- * @param completeNodeTarget ターゲットのIDと自分のID
+ * @param completeNodeTarget ターゲットのIDと自分のIDが格納されている
  * @returns  trueかfalse
  */
 export const checkCompleteTarget = (

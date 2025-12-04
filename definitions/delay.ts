@@ -37,7 +37,6 @@ while true
   ${this.waitTime}
   ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",data)`).join("\n")}
   ${this.nextNodes.map((n) => n.getCallCodes())}
-  NodeState.set_complete("${this.nodeID}")
   Task.suspend
 end
     `;
