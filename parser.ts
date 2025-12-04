@@ -30,6 +30,8 @@ import { MrubyI2C } from "./types/nodes/mruby-i2c.ts";
 import { I2CNode } from "./definitions/i2c.ts";
 import { CompleteNode } from "./definitions/complete.ts";
 import { Complete } from "./types/nodes/complete.ts";
+import { HTTPIn } from "./types/nodes/httpin.ts";
+import { HTTPInNode} from "./definitions/httpin.ts";
 
 type flow =
   | Debug
@@ -46,7 +48,8 @@ type flow =
   | MrubyFunctionRuby
   | MrubyBUTTON
   | MrubyI2C
-  | Complete;
+  | Complete
+  | HTTPIn;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
@@ -69,6 +72,7 @@ export const parseJSON = (json: string): flows => {
       "initLCD",
       "I2C",
       "complete",
+      "http in"
     ];
     return nodeType.includes(n.type);
   });
@@ -179,7 +183,8 @@ const toNodeOutput = (
   | FunctionRubyNode
   | BUTTONNode
   | I2CNode
-  | CompleteNode => {
+  | CompleteNode
+  | HTTPInNode => {
   const allConnectedNodes = node.wires.flat().map(toNodeOutput);
 
   switch (node.type) {
@@ -222,6 +227,8 @@ const toNodeOutput = (
       return new I2CNode(node.data as MrubyI2C, allConnectedNodes);
     case "complete":
       return new CompleteNode(node.data as Complete, allConnectedNodes);
+    case "http in":
+      return new HTTPInNode(node.data as HTTPIn, allConnectedNodes);
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
