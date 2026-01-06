@@ -51,19 +51,21 @@ while true
 ${
   this.isRepeat
     ? this.nextNodes
-        .map((n) => `sendData("${n.getNodeID()}", data)`)
+        .map((n) => `  sendData("${n.getNodeID()}", data)`)
         .join("\n") +
       "\n" +
-      `data = (data + 1)%2`
+      `  data = (data + 1)%2`
     : this.nextNodes.map((n) => `sendData("${n.getNodeID()}", 1)`).join("\n")
 }
 
-${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
+  ${this.nextNodes.map((n) => n.getCallCodes()).join("\n  ")}
   sleep ${this.config.repeat}
 end
 `;
   }
-
+  /*  used = memory_stats()
+  puts "Used bytes: #{used}"
+  */
   getCallCodes(): string {
     return `$${this.NODE_NAME}_${this.nodeID}.resume`;
   }

@@ -26,12 +26,12 @@ export class GPIOREADNode implements NodeOutput {
     return `$${this.NODE_NAME}_${this.nodeID}.run`;
   }
   getNodeCodeOutput(): string {
-    return `
+    return `Task.name = "${this.nodeID}"
 Task.suspend
 while true
   data = $gpio${this.targetPort_digital}.read
-  ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",data)`).join("\n")}
-  ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
+  ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",data)`).join("\n  ")}
+  ${this.nextNodes.map((n) => n.getCallCodes()).join("\n  ")}
   Task.suspend
 end
     `;
