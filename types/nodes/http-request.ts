@@ -3,8 +3,8 @@ export interface HTTPRequest {
   type: "http-request";
   z: string;
   name: string;
-  method: string;
-  ret: string;
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+  ret: "txt" | "bin" | "obj";
   paytoqs: string;
   url: string;
   tls: string;
@@ -13,11 +13,11 @@ export interface HTTPRequest {
   insecureHTTPParser: boolean;
   authType: string;
   senderr: boolean;
-  headers: {
-    keyType:string;
-    keyValue:string;
-    valueType:string;
-    valueValue:string;
+  headers?: {
+    keyType: string;
+    keyValue: string;
+    valueType: string;
+    valueValue: string;
   }[];
   x: number;
   y: number;

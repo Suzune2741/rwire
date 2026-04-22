@@ -33,28 +33,12 @@ export class HTTPInNode implements NodeOutput {
     return `$${this.NODE_NAME}_${this.nodeID}.run`;
   }
 
-  getMethodString(): string {
-    switch (this.method) {
-      case "get":
-        return `get_data = HTTP.get("${this.url}")
-puts get_data`;
-      case "post":
-        break;
-      case "delete":
-        break;
-      case "out":
-        break;
-      case "patch":
-        break;
-    }
-    return ``;
-  }
   getNodeCodeOutput(): string {
     return `Task.suspend
-while true
-    ${this.getMethodString()}
-    Task.suspend
-end
+$path = "${this.url.split(":")[0]}"
+$port = "${this.url.split(":")[1]}"
+${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",1)`).join("\n")}
+${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
     `;
   }
 
@@ -63,10 +47,6 @@ end
   }
 
   getInitialisationCodes(): string[] {
-    return [
-      `$wlan = WLAN.new('STA')
-#SSIDとPASSを入力してください
-$wlan.connect("SSID","PASS")`,
-    ];
+    return [``];
   }
 }
