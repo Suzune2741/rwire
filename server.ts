@@ -8,7 +8,6 @@ import {
   fromFileUrl,
 } from "https://deno.land/std@0.208.0/path/mod.ts";
 
-const PORT = Number(Deno.env.get("PORT") ?? 8000);
 const PROJECT_ROOT = dirname(fromFileUrl(import.meta.url));
 const FILES_BASE_DIR = join(PROJECT_ROOT, "files");
 
@@ -17,8 +16,9 @@ const exist = async (path: string) => {
   try {
     await Deno.stat(path);
     return true;
-  } catch {
-    return false;
+  } catch (e) {
+    if (e instanceof Deno.errors.NotFound) return false;
+    throw e;
   }
 };
 
@@ -30,8 +30,9 @@ const error = (code: string, message: string, details?: string) => ({
 
 const validateId = (id: string) => v4.validate(id);
 
+const CORS_ORIGIN = Deno.env.get("CORS_ORIGIN") ?? "*";
 const app = new Hono();
-app.use("/*", cors({ origin: "*" }));
+app.use("/*", cors({ origin: CORS_ORIGIN }));
 
 await Deno.mkdir(FILES_BASE_DIR, { recursive: true });
 
@@ -56,7 +57,8 @@ app.post("/project", async (c) => {
 
     return c.json(ok({ projectId }));
   } catch (e) {
-    return c.json(error("INTERNAL_ERROR", "Server error", e.message), 500);
+    const message = e instanceof Error ? e.message : String(e);
+    return c.json(error("INTERNAL_ERROR", "Server error", message), 500);
   }
 });
 
@@ -113,7 +115,8 @@ app.post("/project/:id/convert", async (c) => {
       }),
     );
   } catch (e) {
-    return c.json(error("INTERNAL_ERROR", "Server error", e.message), 500);
+    const message = e instanceof Error ? e.message : String(e);
+    return c.json(error("INTERNAL_ERROR", "Server error", message), 500);
   }
 });
 
@@ -140,7 +143,13 @@ app.get("/project/:id", async (c) => {
 
       Deno.readTextFile(join(workDir, "flows.json"))
         .then(
-          (text) => new Map(JSON.parse(text).map((n: any) => [n.id, n.type])),
+          (text) =>
+            new Map<string, string>(
+              (JSON.parse(text) as { id: string; type: string }[]).map((n) => [
+                n.id,
+                n.type,
+              ]),
+            ),
         )
         .catch(() => new Map<string, string>()),
     ]);
@@ -166,7 +175,8 @@ app.get("/project/:id", async (c) => {
 
     return c.json(ok({ mainCode, nodeCodes }));
   } catch (e) {
-    return c.json(error("INTERNAL_ERROR", "Server error", e.message), 500);
+    const message = e instanceof Error ? e.message : String(e);
+    return c.json(error("INTERNAL_ERROR", "Server error", message), 500);
   }
 });
 
@@ -186,8 +196,9 @@ app.delete("/project/:id", async (c) => {
     await Deno.remove(workDir, { recursive: true });
     return c.json(ok({ projectId }));
   } catch (e) {
-    return c.json(error("DELETE_FAILED", "Delete failed", e.message), 500);
+    const message = e instanceof Error ? e.message : String(e);
+    return c.json(error("DELETE_FAILED", "Delete failed", message), 500);
   }
 });
 
-Deno.serve({ port: PORT }, app.fetch);
+Deno.serve(app.fetch);
