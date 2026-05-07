@@ -13,14 +13,15 @@ deno run -A ./parser.ts
 ```
 もしくは
 ```sh 
-deno run -A ./parser.ts -> parse.rb
+deno run -A ./parser.ts -> project.rb
 ```
-
+※rubyファイル名は何でも可
 ## 現在の対応状況
 ### Node-REDの標準ノード
 - Inject
 - debug
 - trigger
+- delay
 ### mruby RBoard Nodes
 - LED
 - GPIO-Read
@@ -30,3 +31,4 @@ deno run -A ./parser.ts -> parse.rb
 - Constant
 - function ruby
 - Button
+- I2C
