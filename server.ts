@@ -10,6 +10,7 @@ import {
 
 const PROJECT_ROOT = dirname(fromFileUrl(import.meta.url));
 const FILES_BASE_DIR = join(PROJECT_ROOT, "files");
+const TIMEOUT_MS = 10000;
 
 const getWorkDir = (id: string) => join(FILES_BASE_DIR, id);
 const exist = async (path: string) => {
@@ -77,12 +78,18 @@ app.post("/project/:id/convert", async (c) => {
   try {
     await Deno.mkdir(join(workDir, "build"), { recursive: true });
 
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), TIMEOUT_MS);
     const cmd = new Deno.Command(Deno.execPath(), {
       args: ["run", "-A", join(PROJECT_ROOT, "parser.ts")],
       cwd: workDir,
+      signal: abortController.signal,
     });
 
-    const { code, stdout, stderr } = await cmd.output();
+    const { code, stdout, stderr } = await cmd
+      .output()
+      .finally(() => clearTimeout(timeoutId));
+
     const decoder = new TextDecoder();
 
     if (code !== 0) {
@@ -115,6 +122,12 @@ app.post("/project/:id/convert", async (c) => {
       }),
     );
   } catch (e) {
+    if (e instanceof DOMException && e.name === "AbortError") {
+      return c.json(
+        error("TIMEOUT", `Compilation timed out after ${TIMEOUT_MS}ms`),
+        504,
+      );
+    }
     const message = e instanceof Error ? e.message : String(e);
     return c.json(error("INTERNAL_ERROR", "Server error", message), 500);
   }
