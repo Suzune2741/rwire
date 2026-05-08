@@ -36,7 +36,7 @@ while true
   data = getData("${this.nodeID}")
   ${this.waitTime}
   ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",data)`).join("\n")}
-  ${this.nextNodes.map((n) => n.getCallCodes())}
+  ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
   Task.suspend
 end
     `;
