@@ -214,4 +214,4 @@ app.delete("/project/:id", async (c) => {
   }
 });
 
-Deno.serve(app.fetch);
+Deno.serve({ port: 8080 }, app.fetch);
