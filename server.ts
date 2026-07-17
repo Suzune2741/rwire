@@ -68,6 +68,8 @@ app.post("/project", async (c) => {
  */
 app.post("/project/:id/convert", async (c) => {
   const projectId = c.req.param("id");
+  const { version } = (await c.req.json()) as { version: string };
+
   if (!validateId(projectId))
     return c.json(error("INVALID_ID", "UUID v4 required"), 400);
 
@@ -77,11 +79,11 @@ app.post("/project/:id/convert", async (c) => {
 
   try {
     await Deno.mkdir(join(workDir, "build"), { recursive: true });
-
+    await Deno.writeTextFile(join(workDir, "version.txt"), version);
     const abortController = new AbortController();
     const timeoutId = setTimeout(() => abortController.abort(), TIMEOUT_MS);
     const cmd = new Deno.Command(Deno.execPath(), {
-      args: ["run", "-A", join(PROJECT_ROOT, "parser.ts")],
+      args: ["run", "-A", "--env", join(PROJECT_ROOT, `parser.ts`), version],
       cwd: workDir,
       signal: abortController.signal,
     });
