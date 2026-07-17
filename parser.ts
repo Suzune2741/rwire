@@ -273,20 +273,31 @@ def sendData(id, data)
 end
     `;
 console.log(dataPass);
+const version = Deno.args[0];
 const initialisationCodes: string[] = []; //GPIO.newなど
-const taskCodes: string[] = [];//Task.createをまとめる
-const callCodes: string[] = [];//runをまとめる
-const initialisationCode: string[] = [];//resumeをまとめる
+const taskCodes: string[] = []; //Task.createをまとめる
+const callCodes: string[] = []; //runをまとめる
+const initialisationCode: string[] = []; //resumeをまとめる
 
-const buildTaskCode = async (id: string, nodeName: string, code: string) => {
-  return `$${nodeName} = Task.create("${await build(id, code)}")`;
+const buildTaskCode = async (
+  id: string,
+  nodeName: string,
+  code: string,
+  version: string,
+) => {
+  return `$${nodeName} = Task.create("${await build(id, code, version)}")`;
 };
 for (let i = 0; i < result.length; i++) {
   const res = toNodeOutput(result[i]);
   const codes = collectCode(res);
 
   for (const code of codes) {
-    const taskStr = await buildTaskCode(code.nodeID, code.nodeName, code.code);
+    const taskStr = await buildTaskCode(
+      code.nodeID,
+      code.nodeName,
+      code.code,
+      version,
+    );
     taskCodes.push(taskStr);
   }
 
