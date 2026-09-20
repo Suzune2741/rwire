@@ -14,15 +14,12 @@ export class CompleteNode implements NodeOutput {
   getNodeID(): string {
     return this.nodeID;
   }
-
   getTaskName(): string {
     return `${this.NODE_NAME}_${this.nodeID}`;
   }
-
   getNextConnectedNodes(): NodeOutput[] {
     return this.nextNodes;
   }
-
   getNodeInitialisationCode(): string {
     return `$${this.NODE_NAME}_${this.nodeID}.run`;
   }
