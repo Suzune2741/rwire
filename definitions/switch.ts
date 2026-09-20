@@ -71,11 +71,12 @@ export class SwitchNode implements NodeOutput {
         return `if getData("${this.nodeID}") ${rulesMap.get(
           rule.t
         )} ${formattedValue}
-${portNodes.map((n) => `  sendData("${n.getNodeID()}",1)`).join("\n")}
+${portNodes.map((n) => `sendData("${n.getNodeID()}",1)`).join("\n")}
 ${portNodes.map((n) => n.getCallCodes()).join("\n")}
 ${
   !this.checkAll &&
-  `next`
+  `Task.suspend 
+next`
 }
 else
 ${portNodes.map((n) => `sendData("${n.getNodeID()}",0)`).join("\n")}
@@ -95,7 +96,8 @@ ${portNodes.map((n) => `sendData("${n.getNodeID()}",1)`).join("\n")}
 ${portNodes.map((n) => n.getCallCodes()).join("\n")}
 ${
   !this.checkAll &&
-  `next`
+  `Task.suspend 
+next`
 }
 else
 ${portNodes.map((n) => `sendData("${n.getNodeID()}",0)`).join("\n")}
@@ -110,7 +112,6 @@ end`;
 Task.suspend
 while true
 ${this.rules.map((n) => n).join("\n")}
-Task.suspend
 end
 
 `;
