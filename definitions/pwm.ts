@@ -49,7 +49,9 @@ while true
     if getData("${this.nodeID}") == 1
       $pwm${this.Pin_num}.freq(${this.frequency})
       $pwm${this.Pin_num}.duty(${this.duty_rate})
+    ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",1)`).join("\n    ")}
       ${this.nextNodes.map((n) => n.getCallCodes())}
+      sleep 0.01
     end
     Task.suspend
 end
@@ -59,7 +61,7 @@ end
   getCallCodes(): string {
     return `$${this.NODE_NAME}_${this.nodeID}.resume`;
   }
-
+  //メインプログラムに初期化を入れない手法も考える
   getInitialisationCodes(): string[] {
     return [`$pwm${this.Pin_num} = PWM.new(${this.Pin_num})`];
   }

@@ -29,7 +29,13 @@ import { BUTTONNode } from "./definitions/button.ts";
 import { MrubyI2C } from "./types/nodes/mruby-i2c.ts";
 import { I2CNode } from "./definitions/i2c.ts";
 import { CompleteNode } from "./definitions/complete.ts";
+import { HTTPRequestNode } from "./definitions/http-request.ts";
+import { HTTPInNode } from "./definitions/httpin.ts";
+import { InitWlanNode } from "./definitions/init-wlan.ts";
 import { Complete } from "./types/nodes/complete.ts";
+import { HTTPRequest } from "./types/nodes/http-request.ts";
+import { HTTPIn } from "./types/nodes/httpin.ts";
+import { InitWlan } from "./types/nodes/mruby-init-wlan.ts";
 
 type flow =
   | Debug
@@ -46,7 +52,10 @@ type flow =
   | MrubyFunctionRuby
   | MrubyBUTTON
   | MrubyI2C
-  | Complete;
+  | Complete
+  | HTTPIn
+  | InitWlan
+  | HTTPRequest;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
@@ -69,6 +78,9 @@ export const parseJSON = (json: string): flows => {
       "initLCD",
       "I2C",
       "complete",
+      "http in",
+      "wlan",
+      "http request",,
     ];
     return nodeType.includes(n.type);
   });
@@ -131,7 +143,7 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
     const normalizedWires = normalizeWires(inputNode.wires);
     // 各出力ポートの接続先ノードを構築
     const wireNodes: Node[][] = normalizedWires.map((outputWires) =>
-      outputWires.map(buildNode)
+      outputWires.map(buildNode),
     );
 
     return {
@@ -151,7 +163,7 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
     return !inputNodes.some((otherNode) => {
       const normalizedWires = normalizeWires(otherNode.wires);
       return normalizedWires.some((outputWires) =>
-        outputWires.includes(nodeId)
+        outputWires.includes(nodeId),
       );
     });
   };
@@ -161,9 +173,29 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
     .filter(isRootNode)
     .map((rootNode) => buildNode(rootNode.id));
 }
+//重複する宣言を消去する
+function extractUniqueInitCodes(codes: string[]): string[] {
+  const initMap = new Map<string, string>();
+
+  codes.forEach((code) => {
+    const match = code.match(/^(\$\w+)/);
+    if (match) {
+      const name = match[1];
+      const existCode = initMap.get(name);
+
+      if (!existCode || code.length > existCode.length) {
+        initMap.set(name, code);
+      }
+    } else {
+      initMap.set(code, code);
+    }
+  });
+  const uniqueinits: string[] = Array.from(initMap.values());
+  return uniqueinits;
+}
 
 const toNodeOutput = (
-  node: Node
+  node: Node,
 ):
   | InjectNode
   | TriggerNode
@@ -179,7 +211,10 @@ const toNodeOutput = (
   | FunctionRubyNode
   | BUTTONNode
   | I2CNode
-  | CompleteNode => {
+  | CompleteNode
+  | HTTPInNode
+  | InitWlanNode
+  | HTTPRequestNode => {
   const allConnectedNodes = node.wires.flat().map(toNodeOutput);
 
   switch (node.type) {
@@ -199,7 +234,7 @@ const toNodeOutput = (
       return new DelayNode(node.data as Delay, allConnectedNodes);
     case "switch": {
       const portNodes = node.wires.map((outputWires) =>
-        outputWires.map(toNodeOutput)
+        outputWires.map(toNodeOutput),
       );
       return new SwitchNode(node.data as Switch, allConnectedNodes, portNodes);
     }
@@ -212,7 +247,7 @@ const toNodeOutput = (
     case "function-Code":
       return new FunctionRubyNode(
         node.data as MrubyFunctionRuby,
-        allConnectedNodes
+        allConnectedNodes,
       );
     case "Button":
       return new BUTTONNode(node.data as MrubyBUTTON, allConnectedNodes);
@@ -222,6 +257,12 @@ const toNodeOutput = (
       return new I2CNode(node.data as MrubyI2C, allConnectedNodes);
     case "complete":
       return new CompleteNode(node.data as Complete, allConnectedNodes);
+    case "http in":
+      return new HTTPInNode(node.data as HTTPIn, allConnectedNodes);
+    case "wlan":
+      return new InitWlanNode(node.data as InitWlan);
+    case "http request":
+      return new HTTPRequestNode(node.data as HTTPRequest, allConnectedNodes);
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
@@ -253,7 +294,6 @@ const collectCode = (node: NodeOutput): codeOutput[] => {
   return code;
 };
 
-// TODO: injectノードのrunタイミングを同時にする必要がありそう.
 // 実行
 const result = transformToNode(input);
 // ノードのデータ受け渡しに必要な関数を生成
@@ -265,38 +305,54 @@ def getData (id)
 end
 def sendData(id, data)
   return $data[id]= data
-end`;
+end
+    `;
 console.log(dataPass);
-// それぞれのノードに対して、getNodeCodeOutput()を呼び出し、コードを生成
+const version = Deno.args[0];
+const initialisationCodes: string[] = []; //GPIO.newなど
+const taskCodes: string[] = []; //Task.createをまとめる
+const callCodes: string[] = []; //runをまとめる
+const initialisationCode: string[] = []; //resumeをまとめる
+
+const buildTaskCode = async (
+  id: string,
+  nodeName: string,
+  code: string,
+  version: string,
+) => {
+  return `$${nodeName} = Task.create("${await build(id, code, version)}")`;
+};
 for (let i = 0; i < result.length; i++) {
   const res = toNodeOutput(result[i]);
   const codes = collectCode(res);
 
-  const taskCode = async (id: string, nodeName: string, code: string) => {
-    return `$${nodeName} = Task.create("${await build(id, code)}")`;
-  };
+  for (const code of codes) {
+    const taskStr = await buildTaskCode(
+      code.nodeID,
+      code.nodeName,
+      code.code,
+      version,
+    );
+    taskCodes.push(taskStr);
+  }
 
-  const buildTaskCodes = async (codes: codeOutput[]) => {
-    const res: string[] = [];
-    for (const code of codes) {
-      res.push(await taskCode(code.nodeID, code.nodeName, code.code));
-    }
-    return res;
-  };
+  const executionCodes = codes.flatMap((v) => v.initialisationCodes);
+  initialisationCodes.push(...executionCodes);
 
-  const c = await buildTaskCodes(codes);
-  // 初期宣言コードを集めて重複を削除
-  const initialisationCodes = codes.map((v) => v.initialisationCodes).flat();
-  const uniqueinits: string[] = Array.from(new Set(initialisationCodes));
+  const specificCodes = codes.map((v) => v.initialisationCode).filter(Boolean);
+  initialisationCode.push(...specificCodes);
 
-  const output = [
-    uniqueinits.join("\n"),
-    "",
-    c.join("\n"),
-    "",
-    codes.map((v) => v.initialisationCode).join("\n"),
-    "",
-    res.getCallCodes(),
-  ].join("\n");
-  console.log(output);
+  callCodes.push(res.getCallCodes());
 }
+const uniqueInitialisationCodes = extractUniqueInitCodes(initialisationCodes);
+
+const finalOutput = [
+  uniqueInitialisationCodes.join("\n"),
+  taskCodes.join("\n"),
+  "",
+  initialisationCode.join("\n"),
+  "",
+  callCodes.join("\n"),
+].join("\n");
+
+console.log(finalOutput);
