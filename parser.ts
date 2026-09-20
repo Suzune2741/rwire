@@ -28,6 +28,14 @@ import { MrubyBUTTON } from "./types/nodes/mruby-button.ts";
 import { BUTTONNode } from "./definitions/button.ts";
 import { MrubyI2C } from "./types/nodes/mruby-i2c.ts";
 import { I2CNode } from "./definitions/i2c.ts";
+import { CompleteNode } from "./definitions/complete.ts";
+import { HTTPRequestNode } from "./definitions/http-request.ts";
+import { HTTPInNode } from "./definitions/httpin.ts";
+import { InitWlanNode } from "./definitions/init-wlan.ts";
+import { Complete } from "./types/nodes/complete.ts";
+import { HTTPRequest } from "./types/nodes/http-request.ts";
+import { HTTPIn } from "./types/nodes/httpin.ts";
+import { InitWlan } from "./types/nodes/mruby-init-wlan.ts";
 
 type flow =
   | Debug
@@ -43,7 +51,11 @@ type flow =
   | MrubyConstant
   | MrubyFunctionRuby
   | MrubyBUTTON
-  | MrubyI2C;
+  | MrubyI2C
+  | Complete
+  | HTTPIn
+  | InitWlan
+  | HTTPRequest;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
@@ -65,6 +77,10 @@ export const parseJSON = (json: string): flows => {
       "Button",
       "initLCD",
       "I2C",
+      "complete",
+      "http in",
+      "wlan",
+      "http request",,
     ];
     return nodeType.includes(n.type);
   });
@@ -76,7 +92,10 @@ type InputNode = {
   data: flow;
   wires: string[] | string[][];
 };
-
+export const completeNodeTarget = {
+  completeNodeId: "",
+  targetNodeId: [""],
+};
 const parsed = parseJSON(Deno.readTextFileSync("flows.json"));
 const input: InputNode[] = parsed.map((n) => {
   return {
@@ -137,6 +156,10 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
 
   const isRootNode = (node: InputNode): boolean => {
     const nodeId = node.id;
+    if (node.type === "complete") {
+      completeNodeTarget.targetNodeId = (node.data as Complete).scope;
+      completeNodeTarget.completeNodeId = node.id;
+    }
     return !inputNodes.some((otherNode) => {
       const normalizedWires = normalizeWires(otherNode.wires);
       return normalizedWires.some((outputWires) =>
@@ -187,7 +210,11 @@ const toNodeOutput = (
   | ConstantNode
   | FunctionRubyNode
   | BUTTONNode
-  | I2CNode => {
+  | I2CNode
+  | CompleteNode
+  | HTTPInNode
+  | InitWlanNode
+  | HTTPRequestNode => {
   const allConnectedNodes = node.wires.flat().map(toNodeOutput);
 
   switch (node.type) {
@@ -228,6 +255,14 @@ const toNodeOutput = (
       return new I2CNode(node.data as MrubyI2C, allConnectedNodes);
     case "I2C":
       return new I2CNode(node.data as MrubyI2C, allConnectedNodes);
+    case "complete":
+      return new CompleteNode(node.data as Complete, allConnectedNodes);
+    case "http in":
+      return new HTTPInNode(node.data as HTTPIn, allConnectedNodes);
+    case "wlan":
+      return new InitWlanNode(node.data as InitWlan);
+    case "http request":
+      return new HTTPRequestNode(node.data as HTTPRequest, allConnectedNodes);
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }

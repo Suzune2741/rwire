@@ -61,7 +61,9 @@ ${
 end
 `;
   }
-
+  /*  used = memory_stats()
+  puts "Used bytes: #{used}"
+  */
   getCallCodes(): string {
     return `$${this.NODE_NAME}_${this.nodeID}.resume`;
   }

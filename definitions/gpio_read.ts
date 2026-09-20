@@ -26,7 +26,7 @@ export class GPIOREADNode implements NodeOutput {
     return `$${this.NODE_NAME}_${this.nodeID}.run`;
   }
   getNodeCodeOutput(): string {
-    return `
+    return `Task.name = "${this.nodeID}"
 Task.suspend
 while true
   if(!getData("${this.nodeID}").nil?)

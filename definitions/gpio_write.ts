@@ -1,5 +1,7 @@
+import { completeNodeTarget } from "../parser.ts";
 import { MrubyGPIOWRITE } from "../types/nodes/gpio_write.ts";
 import { NodeOutput } from "../types/output.ts";
+import { checkCompleteTarget } from "../utils/checkCompleteTarget.ts";
 
 export class GPIOWRITENode implements NodeOutput {
   private readonly nodeID: string;
@@ -15,7 +17,7 @@ export class GPIOWRITENode implements NodeOutput {
     this.targetPort_digital = node.targetPort_digital;
     this.targetPort_PWM = node.targetPort_PWM;
     this.writeType = node.WriteType;
-    this.freq = node.time != "" ? 1.0 / (parseFloat(node.time)/1000) : 0;
+    this.freq = node.time != "" ? 1.0 / (parseFloat(node.time) / 1000) : 0;
     this.duty = node.rate != "" ? parseFloat(node.rate) : 0;
   }
 
@@ -38,6 +40,7 @@ Task.suspend
 while true
   $pwm${this.targetPort_PWM}.freq(${this.freq})
   $pwm${this.targetPort_PWM}.duty(${this.duty})
+      ${checkCompleteTarget(this.nodeID, completeNodeTarget)}
   Task.suspend
 end
     `;
@@ -46,6 +49,7 @@ end
 Task.suspend
 while true
   data = $gpio${this.targetPort_digital}.write(getData("${this.nodeID}"))
+  ${checkCompleteTarget(this.nodeID, completeNodeTarget)}
   Task.suspend
 end
     `;
