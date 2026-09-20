@@ -29,13 +29,13 @@ import { BUTTONNode } from "./definitions/button.ts";
 import { MrubyI2C } from "./types/nodes/mruby-i2c.ts";
 import { I2CNode } from "./definitions/i2c.ts";
 import { CompleteNode } from "./definitions/complete.ts";
-import { Complete } from "./types/nodes/complete.ts";
-import { HTTPIn } from "./types/nodes/httpin.ts";
-import { HTTPInNode } from "./definitions/httpin.ts";
-import { InitWlan } from "./types/nodes/mruby-init-wlan.ts";
-import { InitWlanNode } from "./definitions/init-wlan.ts";
-import { HTTPRequest } from "./types/nodes/http-request.ts";
 import { HTTPRequestNode } from "./definitions/http-request.ts";
+import { HTTPInNode } from "./definitions/httpin.ts";
+import { InitWlanNode } from "./definitions/init-wlan.ts";
+import { Complete } from "./types/nodes/complete.ts";
+import { HTTPRequest } from "./types/nodes/http-request.ts";
+import { HTTPIn } from "./types/nodes/httpin.ts";
+import { InitWlan } from "./types/nodes/mruby-init-wlan.ts";
 
 type flow =
   | Debug
@@ -294,7 +294,6 @@ const collectCode = (node: NodeOutput): codeOutput[] => {
   return code;
 };
 
-// TODO: injectノードのrunタイミングを同時にする必要がありそう.
 // 実行
 const result = transformToNode(input);
 // ノードのデータ受け渡しに必要な関数を生成
@@ -306,22 +305,34 @@ def getData (id)
 end
 def sendData(id, data)
   return $data[id]= data
-end`;
+end
+    `;
 console.log(dataPass);
+const version = Deno.args[0];
 const initialisationCodes: string[] = []; //GPIO.newなど
-const taskCodes: string[] = [];//Task.createをまとめる
-const callCodes: string[] = [];//runをまとめる
-const initialisationCode: string[] = [];//resumeをまとめる
+const taskCodes: string[] = []; //Task.createをまとめる
+const callCodes: string[] = []; //runをまとめる
+const initialisationCode: string[] = []; //resumeをまとめる
 
-const buildTaskCode = async (id: string, nodeName: string, code: string) => {
-  return `$${nodeName} = Task.create("${await build(id, code)}")`;
+const buildTaskCode = async (
+  id: string,
+  nodeName: string,
+  code: string,
+  version: string,
+) => {
+  return `$${nodeName} = Task.create("${await build(id, code, version)}")`;
 };
 for (let i = 0; i < result.length; i++) {
   const res = toNodeOutput(result[i]);
   const codes = collectCode(res);
 
   for (const code of codes) {
-    const taskStr = await buildTaskCode(code.nodeID, code.nodeName, code.code);
+    const taskStr = await buildTaskCode(
+      code.nodeID,
+      code.nodeName,
+      code.code,
+      version,
+    );
     taskCodes.push(taskStr);
   }
 
