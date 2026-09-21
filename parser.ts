@@ -36,7 +36,8 @@ import { Complete } from "./types/nodes/complete.ts";
 import { HTTPRequest } from "./types/nodes/http-request.ts";
 import { HTTPIn } from "./types/nodes/httpin.ts";
 import { InitWlan } from "./types/nodes/mruby-init-wlan.ts";
-
+import { thermistor } from "./types/nodes/thermistor.ts";
+import { ThermistorNode } from "./definitions/thermistor.ts";
 type flow =
   | Debug
   | Inject
@@ -55,7 +56,8 @@ type flow =
   | Complete
   | HTTPIn
   | InitWlan
-  | HTTPRequest;
+  | HTTPRequest
+  | thermistor;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
@@ -80,7 +82,8 @@ export const parseJSON = (json: string): flows => {
       "complete",
       "http in",
       "wlan",
-      "http request",,
+      "http request",
+      "thermistor",
     ];
     return nodeType.includes(n.type);
   });
@@ -214,7 +217,8 @@ const toNodeOutput = (
   | CompleteNode
   | HTTPInNode
   | InitWlanNode
-  | HTTPRequestNode => {
+  | HTTPRequestNode
+  | ThermistorNode => {
   const allConnectedNodes = node.wires.flat().map(toNodeOutput);
 
   switch (node.type) {
@@ -263,6 +267,8 @@ const toNodeOutput = (
       return new InitWlanNode(node.data as InitWlan);
     case "http request":
       return new HTTPRequestNode(node.data as HTTPRequest, allConnectedNodes);
+    case "thermistor":
+      return new ThermistorNode(node.data as thermistor, allConnectedNodes);
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
