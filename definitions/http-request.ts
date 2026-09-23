@@ -1,5 +1,5 @@
 import { completeNodeTarget } from "../parser.ts";
-import { HTTPRequest } from "../types/nodes/http-request.ts"; 
+import { HTTPRequest } from "../types/nodes/http-request.ts";
 import { NodeOutput } from "../types/output.ts";
 import { checkCompleteTarget } from "../utils/checkCompleteTarget.ts";
 
@@ -56,14 +56,14 @@ export class HTTPRequestNode implements NodeOutput {
       this.method === "POST"
         ? `res = HTTP.post(${this.urlExpr()}, payload,headers ${this.authArgs()})`
         : `res = HTTP.get(${this.urlExpr()}${this.authArgs()})`;
-//headerを変えられるようにする
+    //headerを変えられるようにする
     return `
 Task.suspend
 while true
 headers = {
     "Content-Type" => "text/plain"
 }
-payload = getData("${this.getNodeID}")
+payload = getData("${this.nodeID}")
   ${requestLine}
 ${this.nextNodes.map((n) => `  sendData("${n.getNodeID()}", res)`).join("\n")}
 ${this.nextNodes.map((n) => `  ${n.getCallCodes()}`).join("\n")}

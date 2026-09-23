@@ -39,8 +39,8 @@ export class ThermistorNode implements NodeOutput {
     while true 
         voltage = getData("${this.nodeID}") * 1000.0
         temp = 1.0 / ( 1.0 / B * Math.log( (V - voltage) / (voltage/ Rref) / Rref) + 1.0 / (To + 273.0) ) - 273.0
-        ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",temp)`).join("\n    ")}
-        ${this.nextNodes.map((n) => n.getCallCodes())}
+        ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}", "temperature value=" + temp.to_s)`).join("\n        ")}
+        ${this.nextNodes.map((n) => n.getCallCodes()).join("\n        ")}
         Task.suspend
     end
     `;
