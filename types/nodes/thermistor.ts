@@ -3,6 +3,7 @@ export interface thermistor {
   type: "thermistor";
   z: string;
   name: string;
+  device: string;
   bConst: number;
   toTemp: number;
   vcc: number;

@@ -5,6 +5,7 @@ export class ThermistorNode implements NodeOutput {
   private readonly nodeID: string;
   private NODE_NAME = "thermistor";
   private readonly nextNodes: NodeOutput[];
+  private readonly device: string;
   private readonly bConst: number;
   private readonly toTemp: number;
   private readonly vcc: number;
@@ -12,6 +13,7 @@ export class ThermistorNode implements NodeOutput {
   constructor(node: thermistor, nextNodes: NodeOutput[]) {
     this.nodeID = node.id;
     this.nextNodes = nextNodes;
+    this.device = node.device || "unknown";
     this.bConst = node.bConst;
     this.toTemp = node.toTemp;
     this.vcc = node.vcc;
@@ -39,7 +41,7 @@ export class ThermistorNode implements NodeOutput {
     while true 
         voltage = getData("${this.nodeID}") * 1000.0
         temp = 1.0 / ( 1.0 / B * Math.log( (V - voltage) / (voltage/ Rref) / Rref) + 1.0 / (To + 273.0) ) - 273.0
-        ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}", "temperature value=" + temp.to_s)`).join("\n        ")}
+        ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}", "temperature,device=${this.device} value=" + temp.to_s)`).join("\n        ")}
         ${this.nextNodes.map((n) => n.getCallCodes()).join("\n        ")}
         Task.suspend
     end
