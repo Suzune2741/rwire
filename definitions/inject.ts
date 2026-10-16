@@ -8,6 +8,9 @@ export class InjectNode implements NodeOutput {
   private readonly propsName: string[];
   private readonly propsData: (string | number | boolean | JSON)[];
   private readonly isRepeat: boolean;
+  private readonly onceDelay: number;
+  private readonly once: boolean;
+
   private NODE_NAME = "inject";
 
   constructor(node: Inject, nextNodes: NodeOutput[]) {
@@ -21,6 +24,8 @@ export class InjectNode implements NodeOutput {
       .filter((prop) => prop.v !== undefined)
       .map((prop) => prop.v) as string[] | number[] | boolean[] | JSON[];
     this.isRepeat = node.repeat !== "" ? true : false;
+    this.once = node.once;
+    this.onceDelay = node.onceDelay;
   }
 
   getNodeID(): string {
@@ -41,6 +46,7 @@ export class InjectNode implements NodeOutput {
   getNodeCodeOutput(): string {
     return `
 Task.suspend
+${this.once === true ? `sleep ${this.onceDelay}` : ""}
 ${this.propsName
   .map((name, index) => `sendData("msg_${name}", "${this.propsData[index]}")`)
   .join("\n ")}
