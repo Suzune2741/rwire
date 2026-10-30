@@ -18,7 +18,6 @@ export const build = async (
   const { code: exitCode, stderr } = await new Deno.Command(command, {
     args: [rbPath],
   }).output();
-
   if (exitCode !== 0) {
     throw new Error(
       `mrbc failed for ${nodeName}: ${new TextDecoder().decode(stderr)}`,
@@ -30,3 +29,5 @@ export const build = async (
     .map((v) => `\\x${v.toString(16).padStart(2, "0")}`)
     .join("");
 };
+
+

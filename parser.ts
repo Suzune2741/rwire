@@ -151,7 +151,7 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
     const normalizedWires = normalizeWires(inputNode.wires);
     // 各出力ポートの接続先ノードを構築
     const wireNodes: Node[][] = normalizedWires.map((outputWires) =>
-      outputWires.map(buildNode),
+      outputWires.map(buildNode)
     );
 
     return {
@@ -171,7 +171,7 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
     return !inputNodes.some((otherNode) => {
       const normalizedWires = normalizeWires(otherNode.wires);
       return normalizedWires.some((outputWires) =>
-        outputWires.includes(nodeId),
+        outputWires.includes(nodeId)
       );
     });
   };
@@ -181,7 +181,8 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
     .filter(isRootNode)
     .map((rootNode) => buildNode(rootNode.id));
 }
-//重複する宣言を消去する
+
+// 重複する宣言を消去する
 function extractUniqueInitCodes(codes: string[]): string[] {
   const initMap = new Map<string, string>();
 
@@ -198,8 +199,7 @@ function extractUniqueInitCodes(codes: string[]): string[] {
       initMap.set(code, code);
     }
   });
-  const uniqueinits: string[] = Array.from(initMap.values());
-  return uniqueinits;
+  return Array.from(initMap.values());
 }
 
 const toNodeOutput = (
@@ -244,7 +244,7 @@ const toNodeOutput = (
       return new DelayNode(node.data as Delay, allConnectedNodes);
     case "switch": {
       const portNodes = node.wires.map((outputWires) =>
-        outputWires.map(toNodeOutput),
+        outputWires.map(toNodeOutput)
       );
       return new SwitchNode(node.data as Switch, allConnectedNodes, portNodes);
     }
@@ -308,23 +308,24 @@ const collectCode = (node: NodeOutput): codeOutput[] => {
   return code;
 };
 
+// TODO: injectノードのrunタイミングを同時にする必要がありそう.
 // 実行
 const result = transformToNode(input);
-// ノードのデータ受け渡しに必要な関数を生成
+// ノードのデータ受け渡しに必要な関数を出力
 console.log(dataPass);
+
 const version = Deno.args[0];
-const initialisationCodes: string[] = []; //GPIO.newなど
-const taskCodes: string[] = []; //Task.createをまとめる
-const callCodes: string[] = []; //runをまとめる
-const initialisationCode: string[] = []; //resumeをまとめる
+const initialisationCodes: string[] = []; // GPIO.newなど
+const taskCodes: string[] = []; // Task.createをまとめる
+const callCodes: string[] = []; // runをまとめる
+const initialisationCode: string[] = []; // resumeをまとめる
 
-//再コンパイル用のメタデータを保存する
-const tasks:{
-  id:string;
-  nodeName:string;
-  code:string;
+// 再コンパイル用のメタデータを保存する
+const tasks: {
+  id: string;
+  nodeName: string;
+  code: string;
 }[] = [];
-
 
 const buildTaskCode = async (
   id: string,
@@ -334,6 +335,8 @@ const buildTaskCode = async (
 ) => {
   return `$${nodeName} = Task.create("${await build(id, code, version)}")`;
 };
+
+// それぞれのノードに対して、getNodeCodeOutput()を呼び出し、コードを生成
 for (let i = 0; i < result.length; i++) {
   const res = toNodeOutput(result[i]);
   const codes = collectCode(res);
@@ -347,8 +350,8 @@ for (let i = 0; i < result.length; i++) {
     );
     taskCodes.push(taskStr);
     tasks.push({
-      id:code.nodeID,
-      nodeName:code.nodeName,
+      id: code.nodeID,
+      nodeName: code.nodeName,
       code: code.code,
     });
   }
@@ -392,4 +395,3 @@ await Deno.writeTextFile(
   "recompile-meta.json",
   JSON.stringify(metadata, null, 2),
 );
-
