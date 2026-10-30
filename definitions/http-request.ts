@@ -42,7 +42,7 @@ export class HTTPRequestNode implements NodeOutput {
   }
 
   // BASIC認証情報はflows.jsonに含まれない(flows_cred.json側)ため、
-  // ここでは事前にグローバル変数を用意しておく
+  // ここでは事前にグローバル変数を用意しておく(仮)
   private authArgs(): string {
     if (!this.isBasicAuth) return "";
     return `, user:$${this.getTaskName()}_user, passwd:$${this.getTaskName()}_passwd`;
