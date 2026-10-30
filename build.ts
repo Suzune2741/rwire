@@ -6,26 +6,27 @@ export const build = async (
   code: string,
   version: string,
 ) => {
+  const rbPath = `build/${nodeName}.rb`;
+  const mrbPath = `build/${nodeName}.mrb`;
+
+  await Deno.remove(mrbPath).catch(() => {});
+  await Deno.writeTextFile(rbPath, code);
+
   const mrbcPath = Deno.env.get("MRBC_PATH");
-  try {
-    await Deno.remove(`${nodeName}.rb`);
-  } catch (e) {
-    // console.log(e);
-  }
-  await Deno.writeTextFile(`build/${nodeName}.rb`, code, { create: true });
-  if (version) {
-    const cmd = new Deno.Command(`${mrbcPath}/mrbc-${version}`, {
-      args: [`build/${nodeName}.rb`],
-    });
-    await cmd.output();
-  } else {
-    const cmd = new Deno.Command("mrbc", { args: [`build/${nodeName}.rb`] });
-    await cmd.output();
+  const command = version ? `${mrbcPath}/mrbc-${version}` : "mrbc";
+
+  const { code: exitCode, stderr } = await new Deno.Command(command, {
+    args: [rbPath],
+  }).output();
+
+  if (exitCode !== 0) {
+    throw new Error(
+      `mrbc failed for ${nodeName}: ${new TextDecoder().decode(stderr)}`,
+    );
   }
 
-  const byteCode = await Deno.readFile(`build/${nodeName}.mrb`);
-
-  return [...new Uint8Array(byteCode)]
+  const byteCode = await Deno.readFile(mrbPath);
+  return [...byteCode]
     .map((v) => `\\x${v.toString(16).padStart(2, "0")}`)
     .join("");
 };

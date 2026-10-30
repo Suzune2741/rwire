@@ -38,6 +38,8 @@ import { HTTPIn } from "./types/nodes/httpin.ts";
 import { InitWlan } from "./types/nodes/mruby-init-wlan.ts";
 import { thermistor } from "./types/nodes/thermistor.ts";
 import { ThermistorNode } from "./definitions/thermistor.ts";
+import { dataPass } from "./data-pass.ts";
+
 type flow =
   | Debug
   | Inject
@@ -303,22 +305,20 @@ const collectCode = (node: NodeOutput): codeOutput[] => {
 // 実行
 const result = transformToNode(input);
 // ノードのデータ受け渡しに必要な関数を生成
-const dataPass = `
-$data = {}
-def getData (id)
-  a = $data[id]
-  return a
-end
-def sendData(id, data)
-  return $data[id]= data
-end
-    `;
 console.log(dataPass);
 const version = Deno.args[0];
 const initialisationCodes: string[] = []; //GPIO.newなど
 const taskCodes: string[] = []; //Task.createをまとめる
 const callCodes: string[] = []; //runをまとめる
 const initialisationCode: string[] = []; //resumeをまとめる
+
+//再コンパイル用のメタデータを保存する
+const tasks:{
+  id:string;
+  nodeName:string;
+  code:string;
+}[] = [];
+
 
 const buildTaskCode = async (
   id: string,
@@ -340,6 +340,11 @@ for (let i = 0; i < result.length; i++) {
       version,
     );
     taskCodes.push(taskStr);
+    tasks.push({
+      id:code.nodeID,
+      nodeName:code.nodeName,
+      code: code.code,
+    });
   }
 
   const executionCodes = codes.flatMap((v) => v.initialisationCodes);
@@ -362,3 +367,23 @@ const finalOutput = [
 ].join("\n");
 
 console.log(finalOutput);
+
+const nodeTypes = Object.fromEntries(
+  input.map((node) => [node.id, node.type]),
+);
+
+// 再コンパイルに必要な情報を保存
+const metadata = {
+  version,
+  tasks,
+  uniqueInitialisationCodes,
+  initialisationCode,
+  callCodes,
+  nodeTypes,
+};
+
+await Deno.writeTextFile(
+  "recompile-meta.json",
+  JSON.stringify(metadata, null, 2),
+);
+

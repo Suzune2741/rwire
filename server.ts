@@ -29,7 +29,14 @@ const error = (code: string, message: string, details?: string) => ({
   error: { code, message, details },
 });
 
+// プロジェクトID用(UUID v4)の確認
 const validateId = (id: string) => v4.validate(id);
+// ノードID用(Node-RED形式)の確認
+const validateNodeId = (id: string) => /^[0-9A-Za-z_-]+$/.test(id);
+const validateVersion = (v: unknown): v is string =>
+  typeof v === "string" && /^[0-9A-Za-z._-]*$/.test(v);
+
+const running = new Set<string>();
 
 const CORS_ORIGIN = Deno.env.get("CORS_ORIGIN") ?? "*";
 const app = new Hono();
@@ -68,7 +75,6 @@ app.post("/project", async (c) => {
  */
 app.post("/project/:id/convert", async (c) => {
   const projectId = c.req.param("id");
-  const { version } = (await c.req.json()) as { version: string };
 
   if (!validateId(projectId))
     return c.json(error("INVALID_ID", "UUID v4 required"), 400);
@@ -77,7 +83,16 @@ app.post("/project/:id/convert", async (c) => {
   if (!(await exist(workDir)))
     return c.json(error("PROJECT_NOT_FOUND", "Project not found"), 404);
 
+  if (running.has(projectId))
+    return c.json(error("BUSY", "Another operation is in progress"), 409);
+  running.add(projectId);
+
   try {
+    const body = await c.req.json().catch(() => null);
+    const version = body?.version;
+    if (!validateVersion(version))
+      return c.json(error("INVALID_REQUEST", "invalid version"), 400);
+
     await Deno.mkdir(join(workDir, "build"), { recursive: true });
     await Deno.writeTextFile(join(workDir, "version.txt"), version);
     const abortController = new AbortController();
@@ -132,6 +147,8 @@ app.post("/project/:id/convert", async (c) => {
     }
     const message = e instanceof Error ? e.message : String(e);
     return c.json(error("INTERNAL_ERROR", "Server error", message), 500);
+  } finally {
+    running.delete(projectId);
   }
 });
 
@@ -149,7 +166,7 @@ app.get("/project/:id", async (c) => {
 
   try {
     const nodesQuery = c.req.query("nodes");
-    const requestedNodes = nodesQuery?.split(",").filter(validateId) ?? [];
+    const requestedNodes = nodesQuery?.split(",").filter(validateNodeId) ?? [];
 
     const [mainCode, nodeMap] = await Promise.all([
       Deno.readFile(join(workDir, "main.rb"))
@@ -213,6 +230,148 @@ app.delete("/project/:id", async (c) => {
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     return c.json(error("DELETE_FAILED", "Delete failed", message), 500);
+  }
+});
+
+/**
+ * 再コンパイル
+ */
+app.post("/project/:id/recompile", async (c) => {
+  const projectId = c.req.param("id");
+
+  if (!validateId(projectId)) {
+    return c.json(error("INVALID_ID", "UUID v4 required"), 400);
+  }
+
+  const workDir = getWorkDir(projectId);
+
+  if (!(await exist(workDir))) {
+    return c.json(error("PROJECT_NOT_FOUND", "Project not found"), 404);
+  }
+
+  if (running.has(projectId)) {
+    return c.json(error("BUSY", "Another operation is in progress"), 409);
+  }
+  running.add(projectId);
+
+  try {
+    const body = await c.req.json().catch(() => null);
+
+    if (!validateVersion(body?.version)) {
+      return c.json(error("INVALID_REQUEST", "invalid version"), 400);
+    }
+    if (!Array.isArray(body?.nodeCodes)) {
+      return c.json(error("INVALID_REQUEST", "nodeCodes must be array"), 400);
+    }
+
+    const badNode = body.nodeCodes.find(
+      (node: unknown) =>
+        !(
+          typeof node === "object" &&
+          node !== null &&
+          "id" in node &&
+          typeof node.id === "string" &&
+          validateNodeId(node.id) &&
+          "code" in node &&
+          typeof node.code === "string"
+        ),
+    );
+    if (badNode !== undefined) {
+      return c.json(
+        error(
+          "INVALID_REQUEST",
+          "each nodeCodes item needs a safe id and a code string",
+          JSON.stringify(badNode).slice(0, 200),
+        ),
+        400,
+      );
+    }
+
+    if (!(await exist(join(workDir, "recompile-meta.json")))) {
+      return c.json(
+        error("METADATA_NOT_FOUND", "Run convert before recompile"),
+        400,
+      );
+    }
+
+    await Deno.writeTextFile(
+      join(workDir, "recompile-request.json"),
+      JSON.stringify(body),
+    );
+
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), TIMEOUT_MS);
+
+    let code: number;
+    let stderr: Uint8Array;
+
+    try {
+      const result = await new Deno.Command(Deno.execPath(), {
+        args: ["run", "-A", "--env", join(PROJECT_ROOT, "recompile.ts")],
+        cwd: workDir,
+        signal: abortController.signal,
+      }).output();
+
+      code = result.code;
+      stderr = result.stderr;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    const decoder = new TextDecoder();
+
+    if (code !== 0) {
+      return c.json(
+        error(
+          "RECOMPILE_FAILED",
+          "Recompilation failed",
+          decoder.decode(stderr),
+        ),
+        500,
+      );
+    }
+
+    const metadata = JSON.parse(
+      await Deno.readTextFile(join(workDir, "recompile-meta.json")),
+    );
+
+    const nodeCodes = [];
+    const seen = new Set<string>();
+
+    for (const task of metadata.tasks) {
+      if (seen.has(task.id)) continue; 
+      seen.add(task.id);
+
+      const rbPath = join(workDir, "build", `${task.id}.rb`);
+
+      if (!(await exist(rbPath))) continue;
+
+      nodeCodes.push({
+        id: task.id,
+        nodeType: metadata.nodeTypes[task.id] ?? "",
+        code: encodeBase64(await Deno.readFile(rbPath)),
+      });
+    }
+
+    return c.json(
+      ok({
+        mainCode: encodeBase64(await Deno.readFile(join(workDir, "main.rb"))),
+        nodeCodes,
+      }),
+    );
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "AbortError") {
+      return c.json(
+        error("TIMEOUT", `Recompilation timed out after ${TIMEOUT_MS}ms`),
+        504,
+      );
+    }
+
+    const message = e instanceof Error ? e.message : String(e);
+
+    return c.json(error("INTERNAL_ERROR", "Server error", message), 500);
+  } finally {
+    running.delete(projectId);
   }
 });
 
