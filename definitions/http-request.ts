@@ -11,7 +11,7 @@ export class HTTPRequestNode implements NodeOutput {
   private readonly url: string;
   private readonly hasFixedUrl: boolean;
   private readonly isBasicAuth: boolean;
-
+  private readonly paytoqs: string;
   constructor(node: HTTPRequest, nextNodes: NodeOutput[]) {
     this.nodeID = node.id;
     this.nextNodes = nextNodes;
@@ -19,6 +19,7 @@ export class HTTPRequestNode implements NodeOutput {
     this.hasFixedUrl = node.url !== "";
     this.url = node.url;
     this.isBasicAuth = node.authType === "basic";
+    this.paytoqs = node.paytoqs;
 
     if (this.method !== "GET" && this.method !== "POST") {
       throw new Error(
@@ -52,25 +53,52 @@ export class HTTPRequestNode implements NodeOutput {
   }
 
   getNodeCodeOutput(): string {
+    const urlSetup =
+      this.paytoqs === "query"
+        ? `
+url = ${this.urlExpr()}
+
+if !$device.empty?
+   url += "?name=" + $device    
+end
+query = ""
+if data.is_a?(Hash)
+    data.each do |key, value|
+        query += "&" unless query.empty?
+        query += key.to_s + "=" + value.to_s
+    end
+elsif data.is_a?(String)
+    query = data
+end
+
+if !query.empty?
+    url += (url.include?("?") ? "&" : "?") + query
+end
+`
+        : `url = ${this.urlExpr()}`;
+
     const requestLine =
       this.method === "POST"
-        ? `res = HTTP.post(${this.urlExpr()}, payload,headers ${this.authArgs()})`
-        : `res = HTTP.get(${this.urlExpr()}${this.authArgs()})`;
-    //headerを変えられるようにする
+        ? `res = HTTP.post(url, payload, headers ${this.authArgs()})`
+        : `res = HTTP.get(url${this.authArgs()})`;
+
     return `
 Task.suspend
 while true
-headers = {
-    "Content-Type" => "text/plain"
-}
-payload = getData("${this.nodeID}")
-  ${requestLine}
-${this.nextNodes.map((n) => `  sendData("${n.getNodeID()}", res)`).join("\n")}
-${this.nextNodes.map((n) => `  ${n.getCallCodes()}`).join("\n")}
+    data = getData("${this.nodeID}")
+    headers = {
+        "Content-Type" => "text/plain"
+    }
+    ${urlSetup}
+    puts url
+    ${requestLine}
+    ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}", res)`).join("\n")}
+    ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
 
-  ${checkCompleteTarget(this.nodeID, completeNodeTarget)}
-  Task.suspend
-end`;
+    ${checkCompleteTarget(this.nodeID, completeNodeTarget)}
+    Task.suspend
+end
+`;
   }
 
   getCallCodes(): string {

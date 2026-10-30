@@ -39,7 +39,8 @@ import { InitWlan } from "./types/nodes/mruby-init-wlan.ts";
 import { thermistor } from "./types/nodes/thermistor.ts";
 import { ThermistorNode } from "./definitions/thermistor.ts";
 import { dataPass } from "./data-pass.ts";
-
+import { NTPTimestamp } from "./types/nodes/ntpTimestamp.ts";
+import { NTPTimestampNode } from "./definitions/ntpTimestamp.ts";
 type flow =
   | Debug
   | Inject
@@ -59,7 +60,8 @@ type flow =
   | HTTPIn
   | InitWlan
   | HTTPRequest
-  | thermistor;
+  | thermistor
+  | NTPTimestamp;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
@@ -86,6 +88,7 @@ export const parseJSON = (json: string): flows => {
       "wlan",
       "http request",
       "thermistor",
+      "timestamp",
     ];
     return nodeType.includes(n.type);
   });
@@ -220,7 +223,8 @@ const toNodeOutput = (
   | HTTPInNode
   | InitWlanNode
   | HTTPRequestNode
-  | ThermistorNode => {
+  | ThermistorNode
+  | NTPTimestampNode => {
   const allConnectedNodes = node.wires.flat().map(toNodeOutput);
 
   switch (node.type) {
@@ -271,6 +275,8 @@ const toNodeOutput = (
       return new HTTPRequestNode(node.data as HTTPRequest, allConnectedNodes);
     case "thermistor":
       return new ThermistorNode(node.data as thermistor, allConnectedNodes);
+    case "timestamp":
+      return new NTPTimestampNode(node.data as NTPTimestamp, allConnectedNodes);
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
