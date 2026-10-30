@@ -30,7 +30,13 @@ import { MrubyI2C } from "./types/nodes/mruby-i2c.ts";
 import { I2CNode } from "./definitions/i2c.ts";
 import { CompleteNode } from "./definitions/complete.ts";
 import { Complete } from "./types/nodes/complete.ts";
-
+import { HTTPRequest } from "./types/nodes/http-request.ts";
+import { HTTPIn } from "./types/nodes/httpin.ts";
+import { InitWlan } from "./types/nodes/mruby-init-wlan.ts";
+import { thermistor } from "./types/nodes/thermistor.ts";
+import { ThermistorNode } from "./definitions/thermistor.ts";
+import { NTPTimestamp } from "./types/nodes/ntpTimestamp.ts";
+import { NTPTimestampNode } from "./definitions/ntpTimestamp.ts";
 type flow =
   | Debug
   | Inject
@@ -46,7 +52,12 @@ type flow =
   | MrubyFunctionRuby
   | MrubyBUTTON
   | MrubyI2C
-  | Complete;
+  | Complete
+  | HTTPIn
+  | InitWlan
+  | HTTPRequest
+  | thermistor
+  | NTPTimestamp;
 type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
@@ -69,6 +80,11 @@ export const parseJSON = (json: string): flows => {
       "initLCD",
       "I2C",
       "complete",
+      "http in",
+      "wlan",
+      "http request",
+      "thermistor",
+      "timestamp",
     ];
     return nodeType.includes(n.type);
   });
@@ -179,7 +195,12 @@ const toNodeOutput = (
   | FunctionRubyNode
   | BUTTONNode
   | I2CNode
-  | CompleteNode => {
+  | CompleteNode
+  | HTTPInNode
+  | InitWlanNode
+  | HTTPRequestNode
+  | ThermistorNode
+  | NTPTimestampNode => {
   const allConnectedNodes = node.wires.flat().map(toNodeOutput);
 
   switch (node.type) {
@@ -222,6 +243,16 @@ const toNodeOutput = (
       return new I2CNode(node.data as MrubyI2C, allConnectedNodes);
     case "complete":
       return new CompleteNode(node.data as Complete, allConnectedNodes);
+    case "http in":
+      return new HTTPInNode(node.data as HTTPIn, allConnectedNodes);
+    case "wlan":
+      return new InitWlanNode(node.data as InitWlan);
+    case "http request":
+      return new HTTPRequestNode(node.data as HTTPRequest, allConnectedNodes);
+    case "thermistor":
+      return new ThermistorNode(node.data as thermistor, allConnectedNodes);
+    case "timestamp":
+      return new NTPTimestampNode(node.data as NTPTimestamp, allConnectedNodes);
     default:
       throw new Error(`Unknown node type: ${node.type}`);
   }
