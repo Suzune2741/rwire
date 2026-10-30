@@ -29,12 +29,16 @@ import { BUTTONNode } from "./definitions/button.ts";
 import { MrubyI2C } from "./types/nodes/mruby-i2c.ts";
 import { I2CNode } from "./definitions/i2c.ts";
 import { CompleteNode } from "./definitions/complete.ts";
+import { HTTPRequestNode } from "./definitions/http-request.ts";
+import { HTTPInNode } from "./definitions/httpin.ts";
+import { InitWlanNode } from "./definitions/init-wlan.ts";
 import { Complete } from "./types/nodes/complete.ts";
 import { HTTPRequest } from "./types/nodes/http-request.ts";
 import { HTTPIn } from "./types/nodes/httpin.ts";
 import { InitWlan } from "./types/nodes/mruby-init-wlan.ts";
 import { thermistor } from "./types/nodes/thermistor.ts";
 import { ThermistorNode } from "./definitions/thermistor.ts";
+import { dataPass } from "./data-pass.ts";
 import { NTPTimestamp } from "./types/nodes/ntpTimestamp.ts";
 import { NTPTimestampNode } from "./definitions/ntpTimestamp.ts";
 type flow =
@@ -178,8 +182,28 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
     .map((rootNode) => buildNode(rootNode.id));
 }
 
+// 重複する宣言を消去する
+function extractUniqueInitCodes(codes: string[]): string[] {
+  const initMap = new Map<string, string>();
+
+  codes.forEach((code) => {
+    const match = code.match(/^(\$\w+)/);
+    if (match) {
+      const name = match[1];
+      const existCode = initMap.get(name);
+
+      if (!existCode || code.length > existCode.length) {
+        initMap.set(name, code);
+      }
+    } else {
+      initMap.set(code, code);
+    }
+  });
+  return Array.from(initMap.values());
+}
+
 const toNodeOutput = (
-  node: Node
+  node: Node,
 ):
   | InjectNode
   | TriggerNode
@@ -233,7 +257,7 @@ const toNodeOutput = (
     case "function-Code":
       return new FunctionRubyNode(
         node.data as MrubyFunctionRuby,
-        allConnectedNodes
+        allConnectedNodes,
       );
     case "Button":
       return new BUTTONNode(node.data as MrubyBUTTON, allConnectedNodes);
@@ -287,47 +311,87 @@ const collectCode = (node: NodeOutput): codeOutput[] => {
 // TODO: injectノードのrunタイミングを同時にする必要がありそう.
 // 実行
 const result = transformToNode(input);
-// ノードのデータ受け渡しに必要な関数を生成
-const dataPass = `
-$data = {}
-def getData (id)
-  a = $data[id]
-  return a
-end
-def sendData(id, data)
-  return $data[id]= data
-end`;
+// ノードのデータ受け渡しに必要な関数を出力
 console.log(dataPass);
+
+const version = Deno.args[0];
+const initialisationCodes: string[] = []; // GPIO.newなど
+const taskCodes: string[] = []; // Task.createをまとめる
+const callCodes: string[] = []; // runをまとめる
+const initialisationCode: string[] = []; // resumeをまとめる
+
+// 再コンパイル用のメタデータを保存する
+const tasks: {
+  id: string;
+  nodeName: string;
+  code: string;
+}[] = [];
+
+const buildTaskCode = async (
+  id: string,
+  nodeName: string,
+  code: string,
+  version: string,
+) => {
+  return `$${nodeName} = Task.create("${await build(id, code, version)}")`;
+};
+
 // それぞれのノードに対して、getNodeCodeOutput()を呼び出し、コードを生成
 for (let i = 0; i < result.length; i++) {
   const res = toNodeOutput(result[i]);
   const codes = collectCode(res);
 
-  const taskCode = async (id: string, nodeName: string, code: string) => {
-    return `$${nodeName} = Task.create("${await build(id, code)}")`;
-  };
+  for (const code of codes) {
+    const taskStr = await buildTaskCode(
+      code.nodeID,
+      code.nodeName,
+      code.code,
+      version,
+    );
+    taskCodes.push(taskStr);
+    tasks.push({
+      id: code.nodeID,
+      nodeName: code.nodeName,
+      code: code.code,
+    });
+  }
 
-  const buildTaskCodes = async (codes: codeOutput[]) => {
-    const res: string[] = [];
-    for (const code of codes) {
-      res.push(await taskCode(code.nodeID, code.nodeName, code.code));
-    }
-    return res;
-  };
+  const executionCodes = codes.flatMap((v) => v.initialisationCodes);
+  initialisationCodes.push(...executionCodes);
 
-  const c = await buildTaskCodes(codes);
-  // 初期宣言コードを集めて重複を削除
-  const initialisationCodes = codes.map((v) => v.initialisationCodes).flat();
-  const uniqueinits: string[] = Array.from(new Set(initialisationCodes));
+  const specificCodes = codes.map((v) => v.initialisationCode).filter(Boolean);
+  initialisationCode.push(...specificCodes);
 
-  const output = [
-    uniqueinits.join("\n"),
-    "",
-    c.join("\n"),
-    "",
-    codes.map((v) => v.initialisationCode).join("\n"),
-    "",
-    res.getCallCodes(),
-  ].join("\n");
-  console.log(output);
+  callCodes.push(res.getCallCodes());
 }
+const uniqueInitialisationCodes = extractUniqueInitCodes(initialisationCodes);
+
+const finalOutput = [
+  uniqueInitialisationCodes.join("\n"),
+  taskCodes.join("\n"),
+  "",
+  initialisationCode.join("\n"),
+  "",
+  callCodes.join("\n"),
+].join("\n");
+
+console.log(finalOutput);
+
+const nodeTypes = Object.fromEntries(
+  input.map((node) => [node.id, node.type]),
+);
+
+// 再コンパイルに必要な情報を保存
+const metadata = {
+  version,
+  tasks,
+  uniqueInitialisationCodes,
+  initialisationCode,
+  callCodes,
+  nodeTypes,
+};
+
+await Deno.writeTextFile(
+  "recompile-meta.json",
+  JSON.stringify(metadata, null, 2),
+);
