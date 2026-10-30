@@ -30,11 +30,9 @@ import { MrubyI2C } from "./types/nodes/mruby-i2c.ts";
 import { I2CNode } from "./definitions/i2c.ts";
 import { CompleteNode } from "./definitions/complete.ts";
 import { HTTPRequestNode } from "./definitions/http-request.ts";
-import { HTTPInNode } from "./definitions/httpin.ts";
 import { InitWlanNode } from "./definitions/init-wlan.ts";
 import { Complete } from "./types/nodes/complete.ts";
 import { HTTPRequest } from "./types/nodes/http-request.ts";
-import { HTTPIn } from "./types/nodes/httpin.ts";
 import { InitWlan } from "./types/nodes/mruby-init-wlan.ts";
 import { thermistor } from "./types/nodes/thermistor.ts";
 import { ThermistorNode } from "./definitions/thermistor.ts";
@@ -220,7 +218,6 @@ const toNodeOutput = (
   | BUTTONNode
   | I2CNode
   | CompleteNode
-  | HTTPInNode
   | InitWlanNode
   | HTTPRequestNode
   | ThermistorNode
@@ -267,8 +264,6 @@ const toNodeOutput = (
       return new I2CNode(node.data as MrubyI2C, allConnectedNodes);
     case "complete":
       return new CompleteNode(node.data as Complete, allConnectedNodes);
-    case "http in":
-      return new HTTPInNode(node.data as HTTPIn, allConnectedNodes);
     case "wlan":
       return new InitWlanNode(node.data as InitWlan);
     case "http request":
