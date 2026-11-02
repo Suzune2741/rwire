@@ -1,44 +1,26 @@
 import { build } from "./build.ts";
-import { DebugNode } from "./definitions/debug.ts";
-import { InjectNode } from "./definitions/inject.ts";
-import { LEDNode } from "./definitions/led.ts";
-import { TriggerNode } from "./definitions/trigger.ts";
 import { Debug } from "./types/nodes/debug.ts";
 import { Inject } from "./types/nodes/inject.ts";
 import { MrubyLED } from "./types/nodes/mruby-led.ts";
 import { Trigger } from "./types/nodes/trigger.ts";
 import { NodeOutput } from "./types/output.ts";
 import { MrubyGPIOREAD } from "./types/nodes/gpio_read.ts";
-import { GPIOREADNode } from "./definitions/gpio_read.ts";
 import { MrubyPWM } from "./types/nodes/mruby-pwm.ts";
-import { PWMNode } from "./definitions/pwm.ts";
 import { Delay } from "./types/nodes/delay.ts";
-import { DelayNode } from "./definitions/delay.ts";
 import { Switch } from "./types/nodes/switch.ts";
-import { SwitchNode } from "./definitions/switch.ts";
 import { MrubyGPIOWRITE } from "./types/nodes/gpio_write.ts";
-import { GPIOWRITENode } from "./definitions/gpio_write.ts";
 import { MrubyADC } from "./types/nodes/mruby-adc.ts";
-import { ADCNode } from "./definitions/adc.ts";
 import { MrubyConstant } from "./types/nodes/mruby-constant.ts";
-import { ConstantNode } from "./definitions/constant.ts";
 import { MrubyFunctionRuby } from "./types/nodes/mruby-function-ruby.ts";
-import { FunctionRubyNode } from "./definitions/function_ruby.ts";
 import { MrubyBUTTON } from "./types/nodes/mruby-button.ts";
-import { BUTTONNode } from "./definitions/button.ts";
 import { MrubyI2C } from "./types/nodes/mruby-i2c.ts";
-import { I2CNode } from "./definitions/i2c.ts";
-import { CompleteNode } from "./definitions/complete.ts";
-import { HTTPRequestNode } from "./definitions/http-request.ts";
-import { InitWlanNode } from "./definitions/init-wlan.ts";
 import { Complete } from "./types/nodes/complete.ts";
 import { HTTPRequest } from "./types/nodes/http-request.ts";
 import { InitWlan } from "./types/nodes/mruby-init-wlan.ts";
 import { thermistor } from "./types/nodes/thermistor.ts";
-import { ThermistorNode } from "./definitions/thermistor.ts";
-import { dataPass } from "./data-pass.ts";
+import { dataPass } from "./dataPass.ts";
 import { NTPTimestamp } from "./types/nodes/ntpTimestamp.ts";
-import { NTPTimestampNode } from "./definitions/ntpTimestamp.ts";
+import { nodeRegistry } from "./nodeRegistry.ts";
 type flow =
   | Debug
   | Inject
@@ -55,7 +37,6 @@ type flow =
   | MrubyBUTTON
   | MrubyI2C
   | Complete
-  | HTTPIn
   | InitWlan
   | HTTPRequest
   | thermistor
@@ -64,32 +45,7 @@ type flows = flow[];
 
 export const parseJSON = (json: string): flows => {
   const parsed = JSON.parse(json) as flows;
-  return parsed.filter((n) => {
-    const nodeType = [
-      "debug",
-      "inject",
-      "LED",
-      "trigger",
-      "GPIO-Read",
-      "PWM",
-      "delay",
-      "switch",
-      "GPIO-Write-1",
-      "ADC",
-      "Constant",
-      "function-Code",
-      "Button",
-      "initLCD",
-      "I2C",
-      "complete",
-      "http in",
-      "wlan",
-      "http request",
-      "thermistor",
-      "timestamp",
-    ];
-    return nodeType.includes(n.type);
-  });
+  return parsed.filter((n) => Object.hasOwn(nodeRegistry, n.type));
 };
 
 type InputNode = {
@@ -149,7 +105,7 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
     const normalizedWires = normalizeWires(inputNode.wires);
     // 各出力ポートの接続先ノードを構築
     const wireNodes: Node[][] = normalizedWires.map((outputWires) =>
-      outputWires.map(buildNode)
+      outputWires.map(buildNode),
     );
 
     return {
@@ -169,7 +125,7 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
     return !inputNodes.some((otherNode) => {
       const normalizedWires = normalizeWires(otherNode.wires);
       return normalizedWires.some((outputWires) =>
-        outputWires.includes(nodeId)
+        outputWires.includes(nodeId),
       );
     });
   };
@@ -200,81 +156,14 @@ function extractUniqueInitCodes(codes: string[]): string[] {
   return Array.from(initMap.values());
 }
 
-const toNodeOutput = (
-  node: Node,
-):
-  | InjectNode
-  | TriggerNode
-  | LEDNode
-  | DebugNode
-  | GPIOREADNode
-  | PWMNode
-  | DelayNode
-  | SwitchNode
-  | GPIOWRITENode
-  | ADCNode
-  | ConstantNode
-  | FunctionRubyNode
-  | BUTTONNode
-  | I2CNode
-  | CompleteNode
-  | InitWlanNode
-  | HTTPRequestNode
-  | ThermistorNode
-  | NTPTimestampNode => {
-  const allConnectedNodes = node.wires.flat().map(toNodeOutput);
-
-  switch (node.type) {
-    case "inject":
-      return new InjectNode(node.data as Inject, allConnectedNodes);
-    case "trigger":
-      return new TriggerNode(node.data as Trigger, allConnectedNodes);
-    case "LED":
-      return new LEDNode(node.data as MrubyLED);
-    case "debug":
-      return new DebugNode(node.data as Debug);
-    case "GPIO-Read":
-      return new GPIOREADNode(node.data as MrubyGPIOREAD, allConnectedNodes);
-    case "PWM":
-      return new PWMNode(node.data as MrubyPWM, allConnectedNodes);
-    case "delay":
-      return new DelayNode(node.data as Delay, allConnectedNodes);
-    case "switch": {
-      const portNodes = node.wires.map((outputWires) =>
-        outputWires.map(toNodeOutput)
-      );
-      return new SwitchNode(node.data as Switch, allConnectedNodes, portNodes);
-    }
-    case "GPIO-Write-1":
-      return new GPIOWRITENode(node.data as MrubyGPIOWRITE);
-    case "ADC":
-      return new ADCNode(node.data as MrubyADC, allConnectedNodes);
-    case "Constant":
-      return new ConstantNode(node.data as MrubyConstant, allConnectedNodes);
-    case "function-Code":
-      return new FunctionRubyNode(
-        node.data as MrubyFunctionRuby,
-        allConnectedNodes,
-      );
-    case "Button":
-      return new BUTTONNode(node.data as MrubyBUTTON, allConnectedNodes);
-    case "initLCD":
-      return new I2CNode(node.data as MrubyI2C, allConnectedNodes);
-    case "I2C":
-      return new I2CNode(node.data as MrubyI2C, allConnectedNodes);
-    case "complete":
-      return new CompleteNode(node.data as Complete, allConnectedNodes);
-    case "wlan":
-      return new InitWlanNode(node.data as InitWlan);
-    case "http request":
-      return new HTTPRequestNode(node.data as HTTPRequest, allConnectedNodes);
-    case "thermistor":
-      return new ThermistorNode(node.data as thermistor, allConnectedNodes);
-    case "timestamp":
-      return new NTPTimestampNode(node.data as NTPTimestamp, allConnectedNodes);
-    default:
-      throw new Error(`Unknown node type: ${node.type}`);
+const toNodeOutput = (node: Node): NodeOutput => {
+  const factory = nodeRegistry[node.type];
+  if (!factory) {
+    throw new Error(`Unknown node type: ${node.type}`);
   }
+  const ports = node.wires.map((outputWires) => outputWires.map(toNodeOutput));
+  const connected = ports.flat();
+  return factory(node.data, connected, ports);
 };
 
 type codeOutput = {
@@ -372,9 +261,7 @@ const finalOutput = [
 
 console.log(finalOutput);
 
-const nodeTypes = Object.fromEntries(
-  input.map((node) => [node.id, node.type]),
-);
+const nodeTypes = Object.fromEntries(input.map((node) => [node.id, node.type]));
 
 // 再コンパイルに必要な情報を保存
 const metadata = {

@@ -1,6 +1,6 @@
 import { decodeBase64 } from "https://deno.land/std@0.208.0/encoding/base64.ts";
 import { build } from "./build.ts";
-import { dataPass } from "./data-pass.ts";
+import { dataPass } from "./dataPass.ts";
 
 type TaskInfo = {
   id: string;
