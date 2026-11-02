@@ -14,13 +14,12 @@ export interface MrubyI2C {
       //読み込みの場合に用いられる.読み込むバイト数
       b?: string;
       //書き込みの場合に用いられる.コマンドの指定
-      c?:string;
+      c?: string;
       //待ち時間
       de: string;
-    }
+    },
   ];
   x: number;
   y: number;
   wires: string[];
 }
-

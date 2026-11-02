@@ -10,10 +10,8 @@ const createTaskCode = (name: string, code: string) => {
 
 const debug = new DebugNode("debug1");
 const led = new LEDNode("led1");
-const trigger = new TriggerNode("trigger1", [debug,led]);
+const trigger = new TriggerNode("trigger1", [debug, led]);
 const inject = new InjectNode("inject", [trigger]);
 
 const nodes = [debug, led, trigger, inject];
-console.log(nodes.map(v => v.getNodeInitialisationCode()).join("\n"));
-
-
+console.log(nodes.map((v) => v.getNodeInitialisationCode()).join("\n"));

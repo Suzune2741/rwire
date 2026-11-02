@@ -31,22 +31,26 @@ export class TriggerNode implements NodeOutput {
   }
 
   getNodeCodeOutput(): string {
-    const sleepTime = calculateTime(this.config.units,this.config.duration)
+    const sleepTime = calculateTime(this.config.units, this.config.duration);
     return `
 Task.suspend
 
 while true
   print ""
-  ${this.nextNodes
-    .map((n) => `sendData("${n.getNodeID()}", ${this.config.op1})`)
-    .join("\n")}
+  ${
+      this.nextNodes
+        .map((n) => `sendData("${n.getNodeID()}", ${this.config.op1})`)
+        .join("\n")
+    }
   ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
 
   ${sleepTime}
 
-  ${this.nextNodes
-    .map((n) => `sendData("${n.getNodeID()}", ${this.config.op2})`)
-    .join("\n")}
+  ${
+      this.nextNodes
+        .map((n) => `sendData("${n.getNodeID()}", ${this.config.op2})`)
+        .join("\n")
+    }
   ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
   
   Task.suspend

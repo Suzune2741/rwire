@@ -6,7 +6,7 @@ export interface NTPTimestamp {
   server: string;
   timezone: number;
   varname: string;
-  dataname:string;
+  dataname: string;
   format: "date_only" | "time_only" | "full_compact";
   x: number;
   y: number;

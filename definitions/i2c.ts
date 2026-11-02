@@ -38,20 +38,22 @@ export class I2CNode implements NodeOutput {
     return `
 Task.suspend
 while true
-${this.rules
-  .map((rule) => {
-    if (rule.t == "R") {
-      return `data = $i2c.read(${this.slaveAddress},${rule.b},${rule.v})
+${
+      this.rules
+        .map((rule) => {
+          if (rule.t == "R") {
+            return `data = $i2c.read(${this.slaveAddress},${rule.b},${rule.v})
 ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",data)`).join("\n")}
 ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
 sleep ${rule.de}
 `;
-    } else if (rule.t == "W") {
-      return `  $i2c.write(${this.slaveAddress},[${rule.v},${rule.c}]) 
+          } else if (rule.t == "W") {
+            return `  $i2c.write(${this.slaveAddress},[${rule.v},${rule.c}]) 
   sleep ${rule.de}`;
+          }
+        })
+        .join("\n")
     }
-  })
-  .join("\n")}
 Task.suspend
 end`;
   }

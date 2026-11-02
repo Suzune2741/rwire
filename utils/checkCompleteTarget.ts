@@ -9,7 +9,7 @@ export const checkCompleteTarget = (
   completeNodeTarget: {
     completeNodeId: string;
     targetNodeId: string[];
-  }
+  },
 ): string => {
   return completeNodeTarget.targetNodeId.includes(nodeId)
     ? `$complete_${completeNodeTarget.completeNodeId}.resume`

@@ -105,7 +105,7 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
     const normalizedWires = normalizeWires(inputNode.wires);
     // 各出力ポートの接続先ノードを構築
     const wireNodes: Node[][] = normalizedWires.map((outputWires) =>
-      outputWires.map(buildNode),
+      outputWires.map(buildNode)
     );
 
     return {
@@ -125,7 +125,7 @@ function transformToNode(inputNodes: InputNode[]): Node[] {
     return !inputNodes.some((otherNode) => {
       const normalizedWires = normalizeWires(otherNode.wires);
       return normalizedWires.some((outputWires) =>
-        outputWires.includes(nodeId),
+        outputWires.includes(nodeId)
       );
     });
   };

@@ -41,7 +41,9 @@ end
     return `$${this.NODE_NAME}_${this.nodeID}.resume`;
   }
   getInitialisationCodes(): string[] {
-    return [`$gpio${this.targetPort_digital} = GPIO.new(${this.targetPort_digital}, GPIO::IN,GPIO::PULL_UP)
-      `];
+    return [
+      `$gpio${this.targetPort_digital} = GPIO.new(${this.targetPort_digital}, GPIO::IN,GPIO::PULL_UP)
+      `,
+    ];
   }
 }

@@ -4,7 +4,7 @@ import { NodeOutput } from "../types/output.ts";
 export class ConstantNode implements NodeOutput {
   private readonly nodeID: string;
   private NODE_NAME = "Constant";
-  private readonly constant:string;
+  private readonly constant: string;
   private readonly nextNodes: NodeOutput[];
   constructor(node: MrubyConstant, nextNodes: NodeOutput[]) {
     this.nodeID = node.id;
@@ -24,13 +24,16 @@ export class ConstantNode implements NodeOutput {
   getNodeInitialisationCode(): string {
     return `$${this.NODE_NAME}_${this.nodeID}.run`;
   }
-  getConstant(): string{
+  getConstant(): string {
     return this.constant;
   }
   getNodeCodeOutput(): string {
     return `Task.suspend
 while true
-${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",${this.constant})`).join("\n")}
+${
+      this.nextNodes.map((n) => `sendData("${n.getNodeID()}",${this.constant})`)
+        .join("\n")
+    }
 ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
 Task.suspend
 end`;

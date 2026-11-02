@@ -29,5 +29,3 @@ export const build = async (
     .map((v) => `\\x${v.toString(16).padStart(2, "0")}`)
     .join("");
 };
-
-

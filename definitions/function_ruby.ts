@@ -37,7 +37,8 @@ export class FunctionRubyNode implements NodeOutput {
           const indentation = line.match(/^\s*/)?.[0] || "";
           return this.nextNodes
             .map(
-              (n) => `${indentation}sendData("${n.getNodeID()}",${returnValue})`
+              (n) =>
+                `${indentation}sendData("${n.getNodeID()}",${returnValue})`,
             )
             .join("\n");
         }
@@ -48,7 +49,7 @@ export class FunctionRubyNode implements NodeOutput {
   }
   getNodeCodeOutput(): string {
     const convertedFunctionData = this.convertReturnToSendData(
-      this.functionData
+      this.functionData,
     );
     return `
 Task.suspend

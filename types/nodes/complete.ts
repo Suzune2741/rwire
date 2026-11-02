@@ -4,12 +4,9 @@ export interface Complete {
   z: string;
   name: string;
   //監視するノード(これが終了したら実行)
-  scope:string[];
-  uncaught:boolean;
+  scope: string[];
+  uncaught: boolean;
   x: number;
   y: number;
   wires: string[];
 }
-
-
-

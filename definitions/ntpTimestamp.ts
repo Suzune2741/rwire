@@ -58,7 +58,10 @@ while true
     ${formattedTimestamp}
     timestampedData = "${this.dataname}=" + data.to_s + "&time=" + ${this.varname}
     puts timestampedData
-    ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}", timestampedData)`).join("\n")}
+    ${
+      this.nextNodes.map((n) => `sendData("${n.getNodeID()}", timestampedData)`)
+        .join("\n")
+    }
     ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
     Task.suspend
 end

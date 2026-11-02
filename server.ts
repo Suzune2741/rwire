@@ -3,9 +3,9 @@ import { cors } from "https://deno.land/x/hono@v3.12.0/middleware.ts";
 import { encodeBase64 } from "https://deno.land/std@0.208.0/encoding/base64.ts";
 import { v4 } from "https://deno.land/std@0.208.0/uuid/mod.ts";
 import {
-  join,
   dirname,
   fromFileUrl,
+  join,
 } from "https://deno.land/std@0.208.0/path/mod.ts";
 
 const PROJECT_ROOT = dirname(fromFileUrl(import.meta.url));
@@ -76,22 +76,26 @@ app.post("/project", async (c) => {
 app.post("/project/:id/convert", async (c) => {
   const projectId = c.req.param("id");
 
-  if (!validateId(projectId))
+  if (!validateId(projectId)) {
     return c.json(error("INVALID_ID", "UUID v4 required"), 400);
+  }
 
   const workDir = getWorkDir(projectId);
-  if (!(await exist(workDir)))
+  if (!(await exist(workDir))) {
     return c.json(error("PROJECT_NOT_FOUND", "Project not found"), 404);
+  }
 
-  if (running.has(projectId))
+  if (running.has(projectId)) {
     return c.json(error("BUSY", "Another operation is in progress"), 409);
+  }
   running.add(projectId);
 
   try {
     const body = await c.req.json().catch(() => null);
     const version = body?.version;
-    if (!validateVersion(version))
+    if (!validateVersion(version)) {
       return c.json(error("INVALID_REQUEST", "invalid version"), 400);
+    }
 
     await Deno.mkdir(join(workDir, "build"), { recursive: true });
     await Deno.writeTextFile(join(workDir, "version.txt"), version);
@@ -129,8 +133,9 @@ app.post("/project/:id/convert", async (c) => {
       return null;
     })();
 
-    if (!binary)
+    if (!binary) {
       return c.json(error("MRB_NOT_GENERATED", ".mrb not generated"), 500);
+    }
 
     return c.json(
       ok({
@@ -157,12 +162,14 @@ app.post("/project/:id/convert", async (c) => {
  */
 app.get("/project/:id", async (c) => {
   const projectId = c.req.param("id");
-  if (!validateId(projectId))
+  if (!validateId(projectId)) {
     return c.json(error("INVALID_ID", "UUID v4 required"), 400);
+  }
 
   const workDir = getWorkDir(projectId);
-  if (!(await exist(workDir)))
+  if (!(await exist(workDir))) {
     return c.json(error("PROJECT_NOT_FOUND", "Project not found"), 404);
+  }
 
   try {
     const nodesQuery = c.req.query("nodes");
@@ -217,12 +224,14 @@ app.get("/project/:id", async (c) => {
  */
 app.delete("/project/:id", async (c) => {
   const projectId = c.req.param("id");
-  if (!validateId(projectId))
+  if (!validateId(projectId)) {
     return c.json(error("INVALID_ID", "UUID v4 required"), 400);
+  }
 
   const workDir = getWorkDir(projectId);
-  if (!(await exist(workDir)))
+  if (!(await exist(workDir))) {
     return c.json(error("PROJECT_NOT_FOUND", "Project not found"), 404);
+  }
 
   try {
     await Deno.remove(workDir, { recursive: true });
@@ -339,7 +348,7 @@ app.post("/project/:id/recompile", async (c) => {
     const seen = new Set<string>();
 
     for (const task of metadata.tasks) {
-      if (seen.has(task.id)) continue; 
+      if (seen.has(task.id)) continue;
       seen.add(task.id);
 
       const rbPath = join(workDir, "build", `${task.id}.rb`);

@@ -53,9 +53,8 @@ export class HTTPRequestNode implements NodeOutput {
   }
 
   getNodeCodeOutput(): string {
-    const urlSetup =
-      this.paytoqs === "query"
-        ? `
+    const urlSetup = this.paytoqs === "query"
+      ? `
 url = ${this.urlExpr()}
 
 if !$device.empty?
@@ -75,12 +74,11 @@ if !query.empty?
     url += (url.include?("?") ? "&" : "?") + query
 end
 `
-        : `url = ${this.urlExpr()}`;
+      : `url = ${this.urlExpr()}`;
 
-    const requestLine =
-      this.method === "POST"
-        ? `res = HTTP.post(url, payload, headers ${this.authArgs()})`
-        : `res = HTTP.get(url${this.authArgs()})`;
+    const requestLine = this.method === "POST"
+      ? `res = HTTP.post(url, payload, headers ${this.authArgs()})`
+      : `res = HTTP.get(url${this.authArgs()})`;
 
     return `
 Task.suspend

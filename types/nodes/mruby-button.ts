@@ -1,7 +1,7 @@
 export interface MrubyBUTTON {
-  id:string;
+  id: string;
   type: "Button";
-  z:string;
+  z: string;
   name: string;
   /*0が入っている*/
   onBoardButton: string;
@@ -10,6 +10,6 @@ export interface MrubyBUTTON {
   /*0が入っている*/
   selectPull: string;
   x: number;
-  y:number;
-  wires: string[]
+  y: number;
+  wires: string[];
 }

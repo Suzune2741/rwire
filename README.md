@@ -1,28 +1,41 @@
 # rwire
+
 nodered->mruby/c用変換プログラム
 
 ## 実行に必要なもの
+
 - Deno(最新版)
 - Node-REDの出力
+
 ## 実行方法
+
 1. /buildをプロジェクトのルートに作成
 2. flows.jsonを作成し、Node-REDの出力を貼る
 3. 以下のコマンドを実行
-```sh 
+
+```sh
 deno run -A ./parser.ts
 ```
+
 もしくは
-```sh 
+
+```sh
 deno run -A ./parser.ts -> project.rb
 ```
+
 ※rubyファイル名は何でも可
+
 ## 現在の対応状況
+
 ### Node-REDの標準ノード
+
 - Inject
 - debug
 - trigger
 - delay
+
 ### mruby RBoard Nodes
+
 - LED
 - GPIO-Read
 - ADC

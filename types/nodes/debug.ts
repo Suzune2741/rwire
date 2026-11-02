@@ -4,9 +4,9 @@ export interface Debug {
   z: string;
   name: string;
   /*
-  * 出力されるか
-  * falseだったらrubyを出力しなくても良さそう？
-  *  */
+   * 出力されるか
+   * falseだったらrubyを出力しなくても良さそう？
+   */
   active: boolean;
   /* 関係ない */
   tosidebar: boolean;
@@ -26,6 +26,3 @@ export interface Debug {
   y: number;
   wires: string[];
 }
-
-
-

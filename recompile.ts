@@ -19,7 +19,7 @@ type Metadata = {
 
 type NodeCode = {
   id: string;
-  code: string; 
+  code: string;
 };
 
 type Request = {
@@ -75,7 +75,7 @@ const run = async () => {
   const attempted: Change[] = [];
   try {
     for (const ch of changes) {
-      attempted.push(ch); 
+      attempted.push(ch);
       await build(ch.id, ch.editedCode, request.version);
     }
   } catch (e) {

@@ -63,7 +63,7 @@ end
     return this.writeType == "PWM"
       ? [`$pwm${this.targetPort_PWM} = PWM.new(${this.targetPort_PWM})`]
       : [
-          `$gpio${this.targetPort_digital} = GPIO.new(${this.targetPort_digital}, GPIO::OUT)`,
-        ];
+        `$gpio${this.targetPort_digital} = GPIO.new(${this.targetPort_digital}, GPIO::OUT)`,
+      ];
   }
 }

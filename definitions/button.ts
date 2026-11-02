@@ -53,6 +53,8 @@ end`;
     return `$${this.NODE_NAME}_${this.nodeID}.resume`;
   }
   getInitialisationCodes(): string[] {
-    return [`$gpio${this.targetPort} = GPIO.new(${this.targetPort}, GPIO::IN ${this.selectPull})`];
+    return [
+      `$gpio${this.targetPort} = GPIO.new(${this.targetPort}, GPIO::IN ${this.selectPull})`,
+    ];
   }
 }

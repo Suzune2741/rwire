@@ -10,8 +10,9 @@ export class DebugNode implements NodeOutput {
 
   constructor(node: Debug) {
     this.nodeID = node.id;
-    this.target =
-      node.complete === "payload" ? this.nodeID : "msg_" + node.complete;
+    this.target = node.complete === "payload"
+      ? this.nodeID
+      : "msg_" + node.complete;
   }
 
   getTaskName(): string {
