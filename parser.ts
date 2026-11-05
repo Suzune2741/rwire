@@ -18,7 +18,7 @@ import { Complete } from "./types/nodes/complete.ts";
 import { HTTPRequest } from "./types/nodes/http-request.ts";
 import { InitWlan } from "./types/nodes/mruby-init-wlan.ts";
 import { thermistor } from "./types/nodes/thermistor.ts";
-import { dataPass } from "./dataPass.ts";
+import { dataPass } from "./utils/dataPass.ts";
 import { NTPTimestamp } from "./types/nodes/ntpTimestamp.ts";
 import { nodeRegistry } from "./nodeRegistry.ts";
 type flow =

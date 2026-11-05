@@ -1,4 +1,5 @@
 flows.json
+*.json
 build/
 *.mrb
 *.rb
