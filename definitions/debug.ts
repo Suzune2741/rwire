@@ -10,9 +10,11 @@ export class DebugNode implements NodeOutput {
 
   constructor(node: Debug) {
     this.nodeID = node.id;
-    this.target = node.complete === "payload"
-      ? this.nodeID
-      : "msg_" + node.complete;
+    //なぜかノードを出しただけだとnode.completeがfalseになるので仮対策
+    this.target =
+      node.complete === "payload" || node.complete === "false"
+        ? this.nodeID
+        : "msg_" + node.complete;
   }
 
   getTaskName(): string {

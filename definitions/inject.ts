@@ -47,22 +47,28 @@ export class InjectNode implements NodeOutput {
     return `
 Task.suspend
 ${this.once === true ? `sleep ${this.onceDelay}` : ""}
-${this.propsName
-  .map((name, index) => `sendData("msg_${name}", "${this.propsData[index]}")`)
-  .join("\n")}
+${
+      this.propsName
+        .map((name, index) =>
+          `sendData("msg_${name}", "${this.propsData[index]}")`
+        )
+        .join("\n")
+    }
 
 ${this.isRepeat && `data = 0`}
 while true
   print ""
 ${
-  this.isRepeat
-    ? this.nextNodes
-        .map((n) => `   sendData("${n.getNodeID()}", data)`)
-        .join("\n") +
-      "\n" +
-      `data = (data + 1)%2`
-    : this.nextNodes.map((n) => `sendData("${n.getNodeID()}", 1)`).join("\n")
-}
+      this.isRepeat
+        ? this.nextNodes
+          .map((n) => `   sendData("${n.getNodeID()}", data)`)
+          .join("\n") +
+          "\n" +
+          `data = (data + 1)%2`
+        : this.nextNodes.map((n) => `sendData("${n.getNodeID()}", 1)`).join(
+          "\n",
+        )
+    }
 
 ${this.nextNodes.map((n) => n.getCallCodes()).join("  \n")}
   ${this.config.repeat ?? `sleep ${this.config.repeat}`}
