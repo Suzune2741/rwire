@@ -71,7 +71,7 @@ ${
     }
 
 ${this.nextNodes.map((n) => n.getCallCodes()).join("  \n")}
-  ${this.config.repeat ?? `sleep ${this.config.repeat}`}
+  sleep ${this.config.repeat} 
 end
 `;
   }
