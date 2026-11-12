@@ -34,21 +34,19 @@ export class ThermistorNode implements NodeOutput {
   }
   getNodeCodeOutput(): string {
     return `Task.suspend
-    B = ${this.bConst}
-    To = ${this.toTemp}
-    V = ${this.vcc}
-    Rref = ${this.rRef}
-    while true 
-        voltage = getData("${this.nodeID}") * 1000.0
-        temp = 1.0 / ( 1.0 / B * Math.log( (V - voltage) / (voltage/ Rref) / Rref) + 1.0 / (To + 273.0) ) - 273.0
-        ${
-      this.nextNodes.map((n) => `sendData("${n.getNodeID()}", temp)`).join(
-        "\n        ",
-      )
-    }
-        ${this.nextNodes.map((n) => n.getCallCodes()).join("\n        ")}
-        Task.suspend
-    end
+B = ${this.bConst}
+To = ${this.toTemp}
+V = ${this.vcc}
+Rref = ${this.rRef}
+while true 
+    voltage = getData("${this.nodeID}") * 1000.0
+    temp = 1.0 / ( 1.0 / B * Math.log( (V - voltage) / (voltage/ Rref) / Rref) + 1.0 / (To + 273.0) ) - 273.0
+    ${this.nextNodes
+      .map((n) => `sendData("${n.getNodeID()}", temp)`)
+      .join("\n        ")}
+    ${this.nextNodes.map((n) => n.getCallCodes()).join("\n        ")}
+    Task.suspend
+end
     `;
   }
 

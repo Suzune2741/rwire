@@ -27,10 +27,10 @@ export class ADCNode implements NodeOutput {
   getNodeCodeOutput(): string {
     return `Task.suspend
 while true
-data = $adc${this.pinNum}.read()
-${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",data)`).join("\n")}
-${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
-Task.suspend
+  data = $adc${this.pinNum}.read()
+  ${this.nextNodes.map((n) => `sendData("${n.getNodeID()}",data)`).join("\n")}
+  ${this.nextNodes.map((n) => n.getCallCodes()).join("\n")}
+  Task.suspend
 end`;
   }
 
