@@ -10,6 +10,7 @@ export class InjectNode implements NodeOutput {
   private readonly isRepeat: boolean;
   private readonly onceDelay: number;
   private readonly once: boolean;
+  private readonly repeat: number;
 
   private NODE_NAME = "inject";
 
@@ -26,6 +27,7 @@ export class InjectNode implements NodeOutput {
     this.isRepeat = node.repeat !== "" ? true : false;
     this.once = node.once;
     this.onceDelay = node.onceDelay;
+    this.repeat = Number(node.repeat);
   }
 
   getNodeID(): string {
@@ -47,31 +49,25 @@ export class InjectNode implements NodeOutput {
     return `
 Task.suspend
 ${this.once === true ? `sleep ${this.onceDelay}` : ""}
-${
-      this.propsName
-        .map((name, index) =>
-          `sendData("msg_${name}", "${this.propsData[index]}")`
-        )
-        .join("\n")
-    }
+${this.propsName
+  .map((name, index) => ` sendData("msg_${name}", "${this.propsData[index]}")`)
+  .join("\n")}
 
 ${this.isRepeat && `data = 0`}
 while true
   print ""
 ${
-      this.isRepeat
-        ? this.nextNodes
-          .map((n) => `   sendData("${n.getNodeID()}", data)`)
-          .join("\n") +
-          "\n" +
-          `data = (data + 1)%2`
-        : this.nextNodes.map((n) => `sendData("${n.getNodeID()}", 1)`).join(
-          "\n",
-        )
-    }
+  this.isRepeat
+    ? this.nextNodes
+        .map((n) => `  sendData("${n.getNodeID()}", data)`)
+        .join("\n") +
+      "\n" +
+      `  data = (data + 1)%2`
+    : this.nextNodes.map((n) => `sendData("${n.getNodeID()}", 1)`).join("\n ")
+}
 
-${this.nextNodes.map((n) => n.getCallCodes()).join("  \n")}
-  sleep ${this.config.repeat} 
+  ${this.nextNodes.map((n) => n.getCallCodes()).join("\n  ")}
+  ${this.repeat && `sleep ${this.repeat}`}
 end
 `;
   }
